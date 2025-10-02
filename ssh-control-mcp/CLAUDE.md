@@ -287,6 +287,12 @@ NEVER use git commands for modifications unless specifically directed:
 - User will handle all git operations for code changes
 - Ask if unsure whether a git operation is read-only
 
+Commit message requirements:
+
+- NEVER include Claude attribution, co-author tags, or AI generation notices
+- Keep messages professional and focused on technical changes
+- Follow standard commit message format: concise subject, optional detailed body
+
 ## Future Architecture (From notes/ARCHITECTURE.md)
 
 The project is planned to expand into a full MCP server with:
