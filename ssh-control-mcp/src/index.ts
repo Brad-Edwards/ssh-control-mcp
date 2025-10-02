@@ -19,3 +19,6 @@ export {
 
 // Export utilities
 export { expandTilde } from './utils.js';
+
+// Export MCP server
+export { createServer, startServer } from './mcp/server.js';

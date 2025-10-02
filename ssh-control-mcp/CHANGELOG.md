@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-10-01
+
+### Added
+
+- MCP server initialization with stdio transport
+- Tool registration framework (ready for tool definitions)
+- Integration with @modelcontextprotocol/sdk v1.18.x
+
 ## [0.1.1] - 2025-10-01
 
 ### Added
@@ -21,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
 - Core SSH session management (SSHConnectionManager, PersistentSession)
 - Cross-platform shell support (bash, sh, PowerShell, cmd) via ShellFormatter system
 - Interactive and background session types
@@ -30,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connection pooling and reuse
 - Session lifecycle management with keep-alive and automatic timeout
 - Output buffering for background sessions with memory limits
-- Unit test suite (ssh, shells, utils, integration tests)
+- Unit test suite (ssh, shells, utils, integration, mcp tests)
 - TypeScript configuration with strict mode
 - Vitest testing framework with coverage support
 - Build toolchain (TypeScript compiler)
