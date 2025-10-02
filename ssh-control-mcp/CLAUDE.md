@@ -234,6 +234,9 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 - NEVER manually edit package.json to add dependencies - always use package manager (npm install)
 - NEVER hard code package versions - let the package manager determine appropriate versions
 - Use WebSearch tool for documentation and APIs when unsure - do not guess or hallucinate
+- NEVER create timelines, roadmaps, or "next steps" unless part of an approved plan or explicitly requested
+- NEVER create faux enterprise processes (review schedules, approval workflows, etc.) - this is an OSS project by a single developer
+- Keep documentation factual and minimal - avoid process overhead
 
 **Clean Code**:
 
@@ -259,7 +262,8 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 
 - Headings must have a blank line after them
 - Lists must have a blank line before and after them
-- Do not use bold/emphasis markup inside list items
+- NEVER use bold/emphasis markup (asterisks, underscores) anywhere
+- Plain text only for readability in raw markdown
 
 ### Documentation Requirements
 
