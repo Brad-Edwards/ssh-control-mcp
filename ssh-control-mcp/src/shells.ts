@@ -1,3 +1,5 @@
+import { INVALID_ARGUMENTS_ERROR, ShellNames } from './constants.js';
+
 /**
  * Shell-specific command formatting for cross-platform SSH session support
  */
@@ -13,32 +15,60 @@ export interface ShellFormatter {
 
 /**
  * Formatter for Bash and sh shells (Linux/Unix)
+ * 
+ * @param shellName - The name of the shell to use
+ * @throws {Error} If the shell name is not provided
  */
 export class BashShellFormatter implements ShellFormatter {
   private shellName: string;
 
-  constructor(shellName: string = 'bash') {
+  constructor(shellName: string) {
+    if (!shellName) {
+      throw new Error(`${INVALID_ARGUMENTS_ERROR}: shellName is required`);
+    }
     this.shellName = shellName;
   }
 
+  /**
+   * Formats a command with delimiters
+   * @param command - The command to format
+   * @param startDelimiter - The delimiter to start the command
+   * @param endDelimiter - The delimiter to end the command
+   * @throws {Error} If the command, startDelimiter, or endDelimiter is not provided
+   * @returns The formatted command
+   */
   formatCommandWithDelimiters(command: string, startDelimiter: string, endDelimiter: string): string {
-    // Use semicolons for command chaining in bash/sh
+    if (!command || !startDelimiter || !endDelimiter) {
+      throw new Error(`${INVALID_ARGUMENTS_ERROR}: command, startDelimiter, and endDelimiter are required`);
+    }
     return `echo "${startDelimiter}"; ${command}; echo "${endDelimiter}:$?"`;
   }
   
+  /**
+   * Gets the keep-alive command
+   * @returns The keep-alive command
+   */
   getKeepAliveCommand(): string {
-    // Simple newline for bash keep-alive
     return '\n';
   }
   
+  /**
+   * Parses the exit code from the output
+   * @param output - The output to parse
+   * @param endDelimiter - The delimiter to end the command
+   * @throws {Error} If the output or endDelimiter is not provided
+   * @returns The exit code
+   */
   parseExitCode(output: string, endDelimiter: string): number | null {
+    if (!output || !endDelimiter) {
+      throw new Error(INVALID_ARGUMENTS_ERROR);
+    }
     const pattern = `${endDelimiter}:(\\d+)`;
     const match = output.match(new RegExp(pattern));
     
     if (match && match[1]) {
       return parseInt(match[1], 10);
     }
-    
     return null;
   }
 
@@ -48,21 +78,43 @@ export class BashShellFormatter implements ShellFormatter {
 }
 
 /**
- * Formatter for PowerShell (Windows)
+ * Formatter for PowerShell (Windows) 
  */
 export class PowerShellFormatter implements ShellFormatter {
+  /**
+   * Formats a command with delimiters
+   * @param command - The command to format
+   * @param startDelimiter - The delimiter to start the command
+   * @param endDelimiter - The delimiter to end the command
+   * @throws {Error} If the command, startDelimiter, or endDelimiter is not provided
+   * @returns The formatted command
+   */
   formatCommandWithDelimiters(command: string, startDelimiter: string, endDelimiter: string): string {
-    // PowerShell uses $LASTEXITCODE for the exit code of the last command
-    // Use semicolons for command separation
+    if (!command || !startDelimiter || !endDelimiter) {
+      throw new Error(`${INVALID_ARGUMENTS_ERROR}: command, startDelimiter, and endDelimiter are required`);
+    }
     return `Write-Output "${startDelimiter}"; ${command}; Write-Output "${endDelimiter}:$LASTEXITCODE"`;
   }
   
+  /**
+   * Gets the keep-alive command
+   * @returns The keep-alive command
+   */
   getKeepAliveCommand(): string {
-    // PowerShell keep-alive with empty output
     return 'Write-Output ""\n';
   }
-  
+
+  /**
+   * Parses the exit code from the output
+   * @param output - The output to parse
+   * @param endDelimiter - The delimiter to end the command
+   * @throws {Error} If the output or endDelimiter is not provided
+   * @returns The exit code
+   */
   parseExitCode(output: string, endDelimiter: string): number | null {
+    if (!output || !endDelimiter) {
+      throw new Error(`${INVALID_ARGUMENTS_ERROR}: output and endDelimiter are required`);
+    }
     const pattern = `${endDelimiter}:(\\d+)`;
     const match = output.match(new RegExp(pattern));
     
@@ -74,7 +126,7 @@ export class PowerShellFormatter implements ShellFormatter {
   }
 
   getShellName(): string {
-    return 'powershell';
+    return ShellNames.PowerShell;
   }
 }
 
@@ -82,20 +134,44 @@ export class PowerShellFormatter implements ShellFormatter {
  * Formatter for Windows Command Prompt (cmd.exe)
  */
 export class CmdShellFormatter implements ShellFormatter {
+
+  /**
+   * Formats a command with delimiters
+   * @param command - The command to format
+   * @param startDelimiter - The delimiter to start the command
+   * @param endDelimiter - The delimiter to end the command
+   * @throws {Error} If the command, startDelimiter, or endDelimiter is not provided
+   * @returns The formatted command
+   */
   formatCommandWithDelimiters(command: string, startDelimiter: string, endDelimiter: string): string {
-    // CMD uses & for command chaining (always executes next command)
+    if (!command || !startDelimiter || !endDelimiter) {
+      throw new Error(`${INVALID_ARGUMENTS_ERROR}: command, startDelimiter, and endDelimiter are required`);
+    }
+
     // %ERRORLEVEL% contains the exit code
-    // We need to capture ERRORLEVEL immediately after the command
     // The echo %ERRORLEVEL% > NUL is to force evaluation of ERRORLEVEL before the final echo
     return `echo ${startDelimiter} & ${command} & echo %ERRORLEVEL% > NUL & echo ${endDelimiter}:%ERRORLEVEL%`;
   }
   
+  /**
+   * Gets the keep-alive command
+   * @returns The keep-alive command
+   */
   getKeepAliveCommand(): string {
-    // CMD keep-alive with echo. (echo with period for empty line)
     return 'echo.\n';
   }
-  
+
+  /**
+   * Parses the exit code from the output
+   * @param output - The output to parse
+   * @param endDelimiter - The delimiter to end the command
+   * @throws {Error} If the output or endDelimiter is not provided
+   * @returns The exit code
+   */
   parseExitCode(output: string, endDelimiter: string): number | null {
+    if (!output || !endDelimiter) {
+      throw new Error(`${INVALID_ARGUMENTS_ERROR}: output and endDelimiter are required`);
+    }
     const pattern = `${endDelimiter}:(\\d+)`;
     const match = output.match(new RegExp(pattern));
     
@@ -106,25 +182,31 @@ export class CmdShellFormatter implements ShellFormatter {
     return null;
   }
 
+  /**
+   * Gets the shell name
+   * @returns The shell name
+   */
   getShellName(): string {
-    return 'cmd';
+    return ShellNames.Cmd;
   }
 }
 
 /**
  * Factory function to create the appropriate shell formatter
+ * @param shellType - The type of shell to create
+ * @returns The shell formatter
  */
-export function createShellFormatter(shellType: ShellType = 'bash'): ShellFormatter {
+export function createShellFormatter(shellType: ShellType = ShellNames.Bash): ShellFormatter {
   switch (shellType) {
-    case 'powershell':
+    case ShellNames.PowerShell:
       return new PowerShellFormatter();
-    case 'cmd':
+    case ShellNames.Cmd:
       return new CmdShellFormatter();
-    case 'sh':
-      return new BashShellFormatter('sh');
-    case 'bash':
+    case ShellNames.Sh:
+      return new BashShellFormatter(ShellNames.Sh);
+    case ShellNames.Bash:
     default:
-      return new BashShellFormatter('bash');
+      return new BashShellFormatter(ShellNames.Bash);
   }
 }
 

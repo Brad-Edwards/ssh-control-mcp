@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Graceful shutdown support via stopServer() function
+- Signal handlers for SIGTERM and SIGINT (optional, via startServer options)
+- StartServerOptions interface for configuration
+- Comprehensive tests for shutdown lifecycle (26 MCP server tests total)
+- Defensive parameter validation across SSH module (PersistentSession and SSHConnectionManager)
+
+### Changed
+
+- SSH module now uses centralized error constants for consistent error messaging
+- Enhanced JSDoc documentation with @throws annotations for all validated methods
+
 ## [0.1.2] - 2025-10-01
 
 ### Added
@@ -12,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP server initialization with stdio transport
 - Tool registration framework (ready for tool definitions)
 - Integration with @modelcontextprotocol/sdk v1.18.x
+- Comprehensive MCP server test suite (tests/mcp/server.test.ts)
+- Error handling for transport connection failures
+- JSDoc documentation for all MCP server functions
 
 ## [0.1.1] - 2025-10-01
 
@@ -37,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connection pooling and reuse
 - Session lifecycle management with keep-alive and automatic timeout
 - Output buffering for background sessions with memory limits
-- Unit test suite (ssh, shells, utils, integration, mcp tests)
+- Unit test suite (ssh, shells, utils, integration tests)
 - TypeScript configuration with strict mode
 - Vitest testing framework with coverage support
 - Build toolchain (TypeScript compiler)

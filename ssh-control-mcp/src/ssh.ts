@@ -3,6 +3,7 @@ import { Client, ClientChannel } from 'ssh2';
 import { readFile } from 'fs/promises';
 import { EventEmitter } from 'events';
 import { ShellFormatter, ShellType, createShellFormatter } from './shells.js';
+import { INVALID_ARGUMENTS_ERROR, NULL_OR_UNDEFINED_ARGUMENTS_ERROR } from './constants.js';
 
 // Constants for timeouts and limits
 const TIMEOUTS = {
@@ -43,6 +44,22 @@ export class SSHError extends Error {
 export type SessionType = 'interactive' | 'background';
 export type SessionMode = 'normal' | 'raw';
 
+/**
+ * Metadata for a persistent session
+ * @typedef {Object} SessionMetadata
+ * @property {string} sessionId - The ID of the session
+ * @property {string} target - The target host of the session
+ * @property {string} username - The username for the session
+ * @property {SessionType} type - The type of the session
+ * @property {SessionMode} mode - The mode of the session
+ * @property {Date} createdAt - The date and time the session was created
+ * @property {Date} lastActivity - The date and time the session was last active
+ * @property {number} port - The port of the session
+ * @property {string} workingDirectory - The working directory of the session
+ * @property {Map<string, string>} environmentVars - The environment variables of the session
+ * @property {boolean} isActive - Whether the session is active
+ * @property {string[]} commandHistory - The command history of the session
+ */
 export interface SessionMetadata {
   sessionId: string;
   target: string;
@@ -58,6 +75,16 @@ export interface SessionMetadata {
   commandHistory: string[];
 }
 
+/**
+ * Request for a command to be executed
+ * @typedef {Object} CommandRequest
+ * @property {string} id - The ID of the command
+ * @property {string} command - The command to execute
+ * @property {Function} resolve - The function to call when the command completes
+ * @property {Function} reject - The function to call when the command fails
+ * @property {number} timeout - The timeout for the command
+ * @property {boolean} raw - Whether the command should be executed in raw mode
+ */
 export interface CommandRequest {
   id: string;
   command: string;
@@ -67,11 +94,20 @@ export interface CommandRequest {
   raw?: boolean;
 }
 
+/**
+ * Information about a connection to a host
+ * @typedef {Object} ConnectionInfo
+ * @property {Client} client - The SSH client
+ * @property {boolean} connected - Whether the connection is active
+ */
 interface ConnectionInfo {
   client: Client;
   connected: boolean;
 }
 
+/**
+ * A persistent session with a shell
+ */
 export class PersistentSession extends EventEmitter {
   private shell: ClientChannel | null = null;
   private outputBuffer: string[] = [];
@@ -88,6 +124,19 @@ export class PersistentSession extends EventEmitter {
 
   private sessionTimeoutMs: number;
 
+  /**
+   * Create a new persistent session
+   * @param sessionId - The ID of the session
+   * @param target - The target host of the session
+   * @param username - The username for the session
+   * @param type - The type of the session
+   * @param client - The SSH client
+   * @param port - The port of the session
+   * @param mode - The mode of the session
+   * @param timeoutMs - The session timeout in milliseconds
+   * @param shellType - The type of shell to use
+   * @throws {SSHError} If required parameters are missing or invalid
+   */
   constructor(
     sessionId: string,
     target: string,
@@ -100,6 +149,24 @@ export class PersistentSession extends EventEmitter {
     shellType: ShellType = 'bash'
   ) {
     super();
+
+    // Defensive parameter validation
+    if (!sessionId || !target || !username) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: sessionId, target, and username are required`);
+    }
+
+    if (client === null || client === undefined) {
+      throw new SSHError(`${NULL_OR_UNDEFINED_ARGUMENTS_ERROR}: client is required`);
+    }
+
+    if (port <= 0 || port > 65535) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: port must be between 1 and 65535`);
+    }
+
+    if (timeoutMs <= 0) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: timeoutMs must be positive`);
+    }
+
     this.client = client;
     this.sessionTimeoutMs = timeoutMs;
     this.commandDelimiter = `___CMD_${Date.now()}_${Math.random().toString(36).substring(2, 11)}___`;
@@ -121,6 +188,11 @@ export class PersistentSession extends EventEmitter {
     };
   }
 
+  /**
+   * Initialize the session
+   * @returns A promise that resolves when the session is initialized
+   * @throws {SSHError} If the session fails to initialize
+   */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
@@ -163,7 +235,25 @@ export class PersistentSession extends EventEmitter {
     });
   }
 
+  /**
+   * Execute a command in the session
+   * @param command - The command to execute
+   * @param timeout - The timeout for the command
+   * @param raw - Whether the command should be executed in raw mode
+   * @returns A promise that resolves when the command completes
+   * @throws {SSHError} If the session is not initialized or inactive
+   * @throws {SSHError} If command parameter is invalid
+   */
   async executeCommand(command: string, timeout: number = TIMEOUTS.DEFAULT_COMMAND, raw?: boolean): Promise<CommandResult> {
+    // Defensive parameter validation
+    if (!command) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: command is required`);
+    }
+
+    if (timeout <= 0) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: timeout must be positive`);
+    }
+
     if (!this.isInitialized || !this.shell || !this.sessionInfo.isActive) {
       throw new SSHError('Session not initialized or inactive');
     }
@@ -221,6 +311,10 @@ export class PersistentSession extends EventEmitter {
     });
   }
 
+  /**
+   * Process the next command in the queue
+   * @throws {SSHError} If the session is not initialized or inactive
+   */
   private processNextCommand(): void {
     if (this.commandQueue.length === 0 || !this.shell) return;
 
@@ -276,6 +370,10 @@ export class PersistentSession extends EventEmitter {
     }
   }
 
+  /**
+   * Handle the output from the shell
+   * @param data - The output data
+   */
   private handleShellOutput(data: string): void {
     if (this.sessionInfo.type === 'background') {
       this.outputBuffer.push(data);
@@ -290,6 +388,10 @@ export class PersistentSession extends EventEmitter {
     }
   }
 
+  /**
+   * Parse the output from the command
+   * @throws {SSHError} If the command is not found
+   */
   private parseCommandOutput(): void {
     if (!this.currentCommand) return;
 
@@ -333,6 +435,10 @@ export class PersistentSession extends EventEmitter {
     }
   }
 
+  /**
+   * Get the session information
+   * @returns The session information
+   */
   getSessionInfo(): SessionMetadata {
     return { 
       ...this.sessionInfo,
@@ -341,7 +447,19 @@ export class PersistentSession extends EventEmitter {
     };
   }
 
+  /**
+   * Get the buffered output
+   * @param lines - The number of lines to get
+   * @param clear - Whether to clear the output buffer
+   * @returns The buffered output
+   * @throws {SSHError} If lines parameter is invalid
+   */
   getBufferedOutput(lines?: number, clear: boolean = false): string[] {
+    // Defensive parameter validation
+    if (lines !== undefined && lines <= 0) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: lines must be positive`);
+    }
+
     const result = lines ? this.outputBuffer.slice(-lines) : [...this.outputBuffer];
     if (clear) {
       this.outputBuffer = [];
@@ -349,6 +467,9 @@ export class PersistentSession extends EventEmitter {
     return result;
   }
 
+  /**
+   * Start the keep-alive interval
+   */
   private startKeepAlive(): void {
     this.keepAliveInterval = setInterval(() => {
       if (this.shell && this.sessionInfo.isActive && this.commandQueue.length === 0 && !this.currentCommand) {
@@ -357,6 +478,9 @@ export class PersistentSession extends EventEmitter {
     }, TIMEOUTS.KEEP_ALIVE_INTERVAL);
   }
 
+  /**
+   * Reset the session timeout
+   */
   private resetSessionTimeout(): void {
     if (this.sessionTimeout) {
       clearTimeout(this.sessionTimeout);
@@ -368,6 +492,9 @@ export class PersistentSession extends EventEmitter {
     }, this.sessionTimeoutMs);
   }
 
+  /**
+   * Close the session
+   */
   close(): void {
     this.cleanup();
     if (this.shell) {
@@ -375,6 +502,9 @@ export class PersistentSession extends EventEmitter {
     }
   }
 
+  /**
+   * Cleanup the session
+   */
   private cleanup(): void {
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
@@ -392,12 +522,23 @@ export class PersistentSession extends EventEmitter {
   }
 }
 
+/**
+ * A manager for SSH connections and sessions
+ */
 export class SSHConnectionManager {
   private connections: Map<string, ConnectionInfo> = new Map();
   private sessions: Map<string, PersistentSession> = new Map();
 
   /**
    * Execute a command on a target host via SSH
+   * @param host - The host to execute the command on
+   * @param username - The username to use for the command
+   * @param privateKeyPath - The path to the private key to use for the command
+   * @param command - The command to execute
+   * @param port - The port to use for the command
+   * @param timeout - The timeout for the command
+   * @returns A promise that resolves when the command completes
+   * @throws {SSHError} If the command fails to execute or parameters are invalid
    */
   public async executeCommand(
     host: string,
@@ -407,6 +548,19 @@ export class SSHConnectionManager {
     port: number = 22,
     timeout: number = TIMEOUTS.DEFAULT_COMMAND
   ): Promise<CommandResult> {
+    // Defensive parameter validation
+    if (!host || !username || !privateKeyPath || !command) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: host, username, privateKeyPath, and command are required`);
+    }
+
+    if (port <= 0 || port > 65535) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: port must be between 1 and 65535`);
+    }
+
+    if (timeout <= 0) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: timeout must be positive`);
+    }
+
     const client = await this.getConnection(host, username, privateKeyPath, port);
     
     return new Promise((resolve, reject) => {
@@ -453,6 +607,12 @@ export class SSHConnectionManager {
 
   /**
    * Get or create an SSH connection to a host
+   * @param host - The host to get the connection for
+   * @param username - The username to use for the connection
+   * @param privateKeyPath - The path to the private key to use for the connection
+   * @param port - The port to use for the connection
+   * @returns A promise that resolves when the connection is created
+   * @throws {SSHError} If the connection fails to create
    */
   private async getConnection(
     host: string,
@@ -485,6 +645,12 @@ export class SSHConnectionManager {
 
   /**
    * Create a new SSH connection
+   * @param host - The host to create the connection for
+   * @param username - The username to use for the connection
+   * @param privateKeyPath - The path to the private key to use for the connection
+   * @param port - The port to use for the connection
+   * @returns A promise that resolves when the connection is created
+   * @throws {SSHError} If the connection fails to create
    */
   private async createConnection(
     host: string,
@@ -542,6 +708,17 @@ export class SSHConnectionManager {
 
   /**
    * Create a new persistent session
+   * @param sessionId - The ID of the session
+   * @param target - The target host of the session
+   * @param username - The username for the session
+   * @param type - The type of the session
+   * @param privateKeyPath - The path to the private key to use for the session
+   * @param port - The port to use for the session
+   * @param mode - The mode of the session
+   * @param timeoutMs - The session timeout in milliseconds
+   * @param shellType - The type of shell to use
+   * @returns A promise that resolves when the session is created
+   * @throws {SSHError} If the session fails to create or parameters are invalid
    */
   public async createSession(
     sessionId: string,
@@ -554,6 +731,11 @@ export class SSHConnectionManager {
     timeoutMs: number = TIMEOUTS.DEFAULT_SESSION,
     shellType: ShellType = 'bash'
   ): Promise<PersistentSession> {
+    // Defensive parameter validation
+    if (!sessionId || !target || !username || !privateKeyPath) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: sessionId, target, username, and privateKeyPath are required`);
+    }
+
     if (this.sessions.has(sessionId)) {
       throw new SSHError(`Session with ID '${sessionId}' already exists`);
     }
@@ -583,8 +765,14 @@ export class SSHConnectionManager {
 
   /**
    * Get an existing session by ID
+   * @param sessionId - The ID of the session
+   * @returns The session or undefined if not found
+   * @throws {SSHError} If sessionId is invalid
    */
   public getSession(sessionId: string): PersistentSession | undefined {
+    if (!sessionId) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: sessionId is required`);
+    }
     return this.sessions.get(sessionId);
   }
 
@@ -597,8 +785,15 @@ export class SSHConnectionManager {
 
   /**
    * Close a specific session
+   * @param sessionId - The ID of the session to close
+   * @returns True if the session was closed, false if not found
+   * @throws {SSHError} If sessionId is invalid
    */
   public async closeSession(sessionId: string): Promise<boolean> {
+    if (!sessionId) {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: sessionId is required`);
+    }
+
     const session = this.sessions.get(sessionId);
     if (!session) {
       return false;
@@ -624,6 +819,12 @@ export class SSHConnectionManager {
 
   /**
    * Execute a command in a specific session
+   * @param sessionId - The ID of the session
+   * @param command - The command to execute
+   * @param timeout - The timeout for the command
+   * @param raw - Whether the command should be executed in raw mode
+   * @returns A promise that resolves when the command completes
+   * @throws {SSHError} If the session is not found
    */
   public async executeInSession(
     sessionId: string,
@@ -641,6 +842,11 @@ export class SSHConnectionManager {
 
   /**
    * Get buffered output from a background session
+   * @param sessionId - The ID of the session
+   * @param lines - The number of lines to get
+   * @param clear - Whether to clear the output buffer
+   * @returns The buffered output
+   * @throws {SSHError} If the session is not found
    */
   public getSessionOutput(sessionId: string, lines?: number, clear?: boolean): string[] {
     const session = this.sessions.get(sessionId);
@@ -653,6 +859,7 @@ export class SSHConnectionManager {
 
   /**
    * Close all connections and sessions
+   * @throws {SSHError} If the session is not found
    */
   public async disconnectAll(): Promise<void> {
     const sessionPromises = Array.from(this.sessions.values()).map(session => {

@@ -224,6 +224,44 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 - Do not add features "just in case" without explicit requirement
 - Ask before adding abstractions or generalizations
 
+**Defensive Coding and Input Validation**:
+
+- ALL function parameters must be validated at the beginning of the function
+- Throw descriptive errors for invalid inputs (null, undefined, empty strings, out of range, etc.)
+- Use constants for error messages (e.g., INVALID_ARGUMENTS_ERROR from src/constants.ts)
+- Never assume inputs are valid - validate explicitly
+- Check boundary conditions (empty arrays, zero values, negative numbers)
+- Validate types match expectations even in TypeScript (runtime validation)
+- Test defensive code thoroughly - verify errors are thrown for all invalid input combinations
+
+**JSDoc Documentation Style**:
+
+- ALL exported functions, classes, and methods must have JSDoc comments
+- Include description of what the function/class does
+- Document all @param with name, type, and description
+- Document @returns with type and description
+- Document @throws for all error conditions the function can throw
+- Include @example with realistic usage when helpful
+- Keep JSDoc concise but complete
+- Example from src/shells.ts:
+
+```typescript
+/**
+ * Formats a command with delimiters
+ * @param command - The command to format
+ * @param startDelimiter - The delimiter to start the command
+ * @param endDelimiter - The delimiter to end the command
+ * @throws {Error} If the command, startDelimiter, or endDelimiter is not provided
+ * @returns The formatted command
+ */
+formatCommandWithDelimiters(command: string, startDelimiter: string, endDelimiter: string): string {
+  if (!command || !startDelimiter || !endDelimiter) {
+    throw new Error(`${INVALID_ARGUMENTS_ERROR}: command, startDelimiter, and endDelimiter are required`);
+  }
+  // implementation
+}
+```
+
 **Common LLM Failure Modes to Avoid**:
 
 - DO NOT jump ahead of the user - wait for approval before implementing planned features
