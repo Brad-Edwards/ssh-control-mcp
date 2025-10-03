@@ -14,11 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - StartServerOptions interface for configuration
 - Comprehensive tests for shutdown lifecycle (26 MCP server tests total)
 - Defensive parameter validation across SSH module (PersistentSession and SSHConnectionManager)
+- ConnectionPool class for SSH connection reuse and lifecycle management (24 tests)
+- Comprehensive test suite for connection pooling with defensive coding tests
 
 ### Changed
 
 - SSH module now uses centralized error constants for consistent error messaging
 - Enhanced JSDoc documentation with @throws annotations for all validated methods
+- Refactored SSH module into focused, single-responsibility modules:
+  - src/ssh/types.ts - Type definitions (CommandResult, SessionType, SessionMode, SessionMetadata, etc.)
+  - src/ssh/errors.ts - SSHError class
+  - src/ssh/constants.ts - SSH-specific constants (TIMEOUTS, BUFFER_LIMITS, SSH_CONFIG)
+  - src/ssh/session.ts - PersistentSession class
+  - src/ssh/connection-pool.ts - ConnectionPool class (new abstraction)
+  - src/ssh/manager.ts - SSHConnectionManager class
+  - src/ssh/index.ts - Barrel export for clean API
+- Reduced main ssh.ts file from 909 lines to focused modules (improved maintainability)
+- SSHConnectionManager now uses ConnectionPool internally for connection management
+- All existing tests continue to pass (110 total tests)
+- Public API remains backward compatible
 
 ## [0.1.2] - 2025-10-01
 

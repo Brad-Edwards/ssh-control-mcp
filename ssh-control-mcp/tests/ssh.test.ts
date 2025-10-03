@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { PersistentSession, SSHConnectionManager } from '../src/ssh.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { PersistentSession, SSHConnectionManager } from '../src/ssh/index.js';
 import { ShellType } from '../src/shells.js';
 
 // Test our business logic, not the ssh2 library

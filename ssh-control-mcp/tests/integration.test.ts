@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SSHConnectionManager } from '../src/ssh.js';
+import { SSHConnectionManager } from '../src/ssh/index.js';
 import { Client } from 'ssh2';
 
 vi.mock('ssh2');

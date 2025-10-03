@@ -6,8 +6,13 @@ export {
   SessionType,
   SessionMode,
   SessionMetadata,
-  CommandRequest
-} from './ssh.js';
+  CommandRequest,
+  ConnectionPool,
+  ConnectionInfo,
+  TIMEOUTS,
+  BUFFER_LIMITS,
+  SSH_CONFIG
+} from './ssh/index.js';
 
 export {
   ShellType,
