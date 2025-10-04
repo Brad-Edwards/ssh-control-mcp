@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { expandTilde } from '../src/utils.js';
 import { homedir } from 'os';
 import { resolve } from 'path';
@@ -10,6 +10,12 @@ describe('expandTilde', () => {
 
   beforeEach(() => {
     vi.mocked(homedir).mockReturnValue(mockHomedir);
+  });
+
+
+  it('should handle empty string input', () => {
+    const result = expandTilde('');
+    expect(result).toBe('');
   });
 
   it('should expand ~ to home directory', () => {

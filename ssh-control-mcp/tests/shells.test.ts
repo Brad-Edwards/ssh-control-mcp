@@ -9,7 +9,13 @@ import {
 
 describe('Shell Formatters', () => {
   describe('BashShellFormatter', () => {
-    const formatter = new BashShellFormatter();
+    const formatter = new BashShellFormatter('bash');
+
+    it('should throw error if shell name is not provided', () => {
+      expect(() => new BashShellFormatter('')).toThrow('Invalid arguments: shellName is required');
+      expect(() => new BashShellFormatter(null as any)).toThrow('Invalid arguments: shellName is required');
+      expect(() => new BashShellFormatter(undefined as any)).toThrow('Invalid arguments: shellName is required');
+    });
 
     it('should format command with delimiters correctly', () => {
       const command = 'ls -la';
@@ -20,11 +26,18 @@ describe('Shell Formatters', () => {
       expect(result).toBe('echo "START_123"; ls -la; echo "END_123:$?"');
     });
 
+    it('should throw error if command parameters are invalid', () => {
+      expect(() => formatter.formatCommandWithDelimiters('', 'START', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters('ls', '', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters('ls', 'START', '')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters(null as any, 'START', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+    });
+
     it('should handle commands with quotes', () => {
       const command = 'echo "hello world"';
       const startDelimiter = 'START_123';
       const endDelimiter = 'END_123';
-      
+
       const result = formatter.formatCommandWithDelimiters(command, startDelimiter, endDelimiter);
       expect(result).toBe('echo "START_123"; echo "hello world"; echo "END_123:$?"');
     });
@@ -33,13 +46,20 @@ describe('Shell Formatters', () => {
       expect(formatter.getKeepAliveCommand()).toBe('\n');
     });
 
+    it('should throw error if parseExitCode parameters are invalid', () => {
+      expect(() => formatter.parseExitCode('', 'END')).toThrow('Invalid arguments');
+      expect(() => formatter.parseExitCode('output', '')).toThrow('Invalid arguments');
+      expect(() => formatter.parseExitCode(null as any, 'END')).toThrow('Invalid arguments');
+      expect(() => formatter.parseExitCode('output', null as any)).toThrow('Invalid arguments');
+    });
+
     it('should parse exit code from output', () => {
       const output = 'some output\nEND_123:0\nmore output';
       expect(formatter.parseExitCode(output, 'END_123')).toBe(0);
-      
+
       const failedOutput = 'some output\nEND_123:1\nmore output';
       expect(formatter.parseExitCode(failedOutput, 'END_123')).toBe(1);
-      
+
       const noCodeOutput = 'some output without exit code';
       expect(formatter.parseExitCode(noCodeOutput, 'END_123')).toBeNull();
     });
@@ -51,6 +71,13 @@ describe('Shell Formatters', () => {
 
   describe('PowerShellFormatter', () => {
     const formatter = new PowerShellFormatter();
+
+    it('should throw error if command parameters are invalid', () => {
+      expect(() => formatter.formatCommandWithDelimiters('', 'START', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters('Get-Process', '', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters('Get-Process', 'START', '')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters(null as any, 'START', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+    });
 
     it('should format command with delimiters correctly', () => {
       const command = 'Get-ChildItem';
@@ -74,13 +101,20 @@ describe('Shell Formatters', () => {
       expect(formatter.getKeepAliveCommand()).toBe('Write-Output ""\n');
     });
 
+    it('should throw error if parseExitCode parameters are invalid', () => {
+      expect(() => formatter.parseExitCode('', 'END')).toThrow('Invalid arguments: output and endDelimiter are required');
+      expect(() => formatter.parseExitCode('output', '')).toThrow('Invalid arguments: output and endDelimiter are required');
+      expect(() => formatter.parseExitCode(null as any, 'END')).toThrow('Invalid arguments: output and endDelimiter are required');
+      expect(() => formatter.parseExitCode('output', null as any)).toThrow('Invalid arguments: output and endDelimiter are required');
+    });
+
     it('should parse exit code from output', () => {
       const output = 'some output\nEND_123:0\nmore output';
       expect(formatter.parseExitCode(output, 'END_123')).toBe(0);
-      
+
       const failedOutput = 'some output\nEND_123:1\nmore output';
       expect(formatter.parseExitCode(failedOutput, 'END_123')).toBe(1);
-      
+
       const noCodeOutput = 'some output without exit code';
       expect(formatter.parseExitCode(noCodeOutput, 'END_123')).toBeNull();
     });
@@ -92,6 +126,13 @@ describe('Shell Formatters', () => {
 
   describe('CmdShellFormatter', () => {
     const formatter = new CmdShellFormatter();
+
+    it('should throw error if command parameters are invalid', () => {
+      expect(() => formatter.formatCommandWithDelimiters('', 'START', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters('dir', '', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters('dir', 'START', '')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+      expect(() => formatter.formatCommandWithDelimiters(null as any, 'START', 'END')).toThrow('Invalid arguments: command, startDelimiter, and endDelimiter are required');
+    });
 
     it('should format command with delimiters correctly', () => {
       const command = 'dir';
@@ -115,13 +156,20 @@ describe('Shell Formatters', () => {
       expect(formatter.getKeepAliveCommand()).toBe('echo.\n');
     });
 
+    it('should throw error if parseExitCode parameters are invalid', () => {
+      expect(() => formatter.parseExitCode('', 'END')).toThrow('Invalid arguments: output and endDelimiter are required');
+      expect(() => formatter.parseExitCode('output', '')).toThrow('Invalid arguments: output and endDelimiter are required');
+      expect(() => formatter.parseExitCode(null as any, 'END')).toThrow('Invalid arguments: output and endDelimiter are required');
+      expect(() => formatter.parseExitCode('output', null as any)).toThrow('Invalid arguments: output and endDelimiter are required');
+    });
+
     it('should parse exit code from output', () => {
       const output = 'some output\nEND_123:0\nmore output';
       expect(formatter.parseExitCode(output, 'END_123')).toBe(0);
-      
+
       const failedOutput = 'some output\nEND_123:1\nmore output';
       expect(formatter.parseExitCode(failedOutput, 'END_123')).toBe(1);
-      
+
       const noCodeOutput = 'some output without exit code';
       expect(formatter.parseExitCode(noCodeOutput, 'END_123')).toBeNull();
     });

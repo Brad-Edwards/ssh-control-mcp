@@ -1,4 +1,3 @@
-// Export the working SSH implementation
 export {
   SSHConnectionManager,
   PersistentSession,
@@ -7,15 +6,20 @@ export {
   SessionType,
   SessionMode,
   SessionMetadata,
-  CommandRequest
-} from './ssh.js';
+  CommandRequest,
+  ConnectionPool,
+  ConnectionInfo,
+  TIMEOUTS,
+  BUFFER_LIMITS,
+  SSH_CONFIG
+} from './ssh/index.js';
 
-// Export shell support
 export {
   ShellType,
   ShellFormatter,
   createShellFormatter
 } from './shells.js';
 
-// Export utilities
 export { expandTilde } from './utils.js';
+
+export { createServer, startServer, stopServer } from './mcp/server.js';

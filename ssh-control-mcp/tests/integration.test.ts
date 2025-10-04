@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SSHConnectionManager } from '../src/ssh.js';
+import { SSHConnectionManager } from '../src/ssh/index.js';
 import { Client } from 'ssh2';
 
 vi.mock('ssh2');
@@ -37,13 +37,13 @@ describe('SSH Integration Tests', () => {
     it('should throw error when executing in non-existent session', async () => {
       await expect(
         manager.executeInSession('non-existent', 'ls')
-      ).rejects.toThrow("Session 'non-existent' not found");
+      ).rejects.toThrow("Session not found: non-existent");
     });
 
     it('should throw error when getting output from non-existent session', () => {
       expect(() => {
         manager.getSessionOutput('non-existent');
-      }).toThrow("Session 'non-existent' not found");
+      }).toThrow("Session not found: non-existent");
     });
 
     // Note: Full integration tests with real SSH connections would require
