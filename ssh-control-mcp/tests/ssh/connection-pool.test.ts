@@ -187,7 +187,7 @@ describe('ConnectionPool', () => {
       });
 
       await expect(pool.getConnection('host1', 'user1', '/key1', 22))
-        .rejects.toThrow('Connection failed to host1:22');
+        .rejects.toThrow('Connection failed: host1:22');
     }, 10000);
 
     it('should handle private key read failure', async () => {

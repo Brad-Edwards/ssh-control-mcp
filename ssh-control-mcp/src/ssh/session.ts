@@ -58,12 +58,13 @@ export class PersistentSession extends EventEmitter {
     super();
 
     // Defensive parameter validation
-    if (!sessionId || !target || !username) {
-      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: sessionId, target, and username are required`);
+    if (sessionId === null || sessionId === undefined || target === null || target === undefined ||
+        username === null || username === undefined || client === null || client === undefined) {
+      throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
 
-    if (client === null || client === undefined) {
-      throw new SSHError(`${NULL_OR_UNDEFINED_ARGUMENTS_ERROR}: client is required`);
+    if (sessionId === '' || target === '' || username === '') {
+      throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: sessionId, target, and username are required`);
     }
 
     if (port <= 0 || port > 65535) {

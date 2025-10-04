@@ -3,7 +3,15 @@ import { ConnectionPool } from './connection-pool.js';
 import { CommandResult, SessionType, SessionMode, SessionMetadata } from './types.js';
 import { SSHError } from './errors.js';
 import { ShellType } from '../shells.js';
-import { INVALID_ARGUMENTS_ERROR, NULL_OR_UNDEFINED_ARGUMENTS_ERROR } from '../constants.js';
+import { 
+  INVALID_ARGUMENTS_ERROR,
+  NULL_OR_UNDEFINED_ARGUMENTS_ERROR,
+  COMMAND_TIMEOUT_ERROR,
+  SESSION_ID_REQUIRED_ERROR,
+  SESSION_NOT_FOUND_ERROR,
+  SESSION_ALREADY_EXISTS_ERROR,
+  STREAM_ERROR
+} from '../constants.js';
 import { TIMEOUTS } from './constants.js';
 
 /**
@@ -38,7 +46,6 @@ export class SSHConnectionManager {
     port: number = 22,
     timeout: number = TIMEOUTS.DEFAULT_COMMAND
   ): Promise<CommandResult> {
-    // Validate arguments
     if (host === null || host === undefined || username === null || username === undefined ||
         privateKeyPath === null || privateKeyPath === undefined || command === null || command === undefined) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
@@ -57,7 +64,7 @@ export class SSHConnectionManager {
 
     return new Promise((resolve, reject) => {
       const timeoutHandle = setTimeout(() => {
-        reject(new SSHError('Command timeout'));
+        reject(new SSHError(COMMAND_TIMEOUT_ERROR));
       }, timeout);
 
       let stdout = '';
@@ -90,7 +97,7 @@ export class SSHConnectionManager {
 
         stream.on('error', (err: Error) => {
           clearTimeout(timeoutHandle);
-          reject(new SSHError(`Stream error: ${err.message}`, err));
+          reject(new SSHError(`${STREAM_ERROR}: ${err.message}`, err));
         });
       });
     });
@@ -122,7 +129,6 @@ export class SSHConnectionManager {
     timeoutMs: number = TIMEOUTS.DEFAULT_SESSION,
     shellType: ShellType = 'bash'
   ): Promise<PersistentSession> {
-    // Validate arguments
     if (sessionId === null || sessionId === undefined || target === null || target === undefined ||
         username === null || username === undefined || privateKeyPath === null || privateKeyPath === undefined) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
@@ -132,7 +138,7 @@ export class SSHConnectionManager {
     }
 
     if (this.sessions.has(sessionId)) {
-      throw new SSHError(`Session '${sessionId}' already exists`);
+      throw new SSHError(`${SESSION_ALREADY_EXISTS_ERROR}: ${sessionId}`);
     }
 
     const client = await this.pool.getConnection(target, username, privateKeyPath, port);
@@ -165,10 +171,9 @@ export class SSHConnectionManager {
     if (sessionId === null || sessionId === undefined) {
       throw new Error(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
-    if (!sessionId) {
-      throw new Error(`${INVALID_ARGUMENTS_ERROR}: sessionId is required`);
+    if (sessionId === '') {
+      throw new Error(SESSION_ID_REQUIRED_ERROR);
     }
-
     return this.sessions.get(sessionId);
   }
 
@@ -190,8 +195,8 @@ export class SSHConnectionManager {
     if (sessionId === null || sessionId === undefined) {
       throw new Error(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
-    if (!sessionId) {
-      throw new Error(`${INVALID_ARGUMENTS_ERROR}: sessionId is required`);
+    if (sessionId === '') {
+      throw new Error(SESSION_ID_REQUIRED_ERROR);
     }
 
     const session = this.sessions.get(sessionId);
@@ -233,7 +238,7 @@ export class SSHConnectionManager {
   ): Promise<CommandResult> {
     const session = this.sessions.get(sessionId);
     if (!session) {
-      throw new SSHError(`Session '${sessionId}' not found`);
+      throw new SSHError(`${SESSION_NOT_FOUND_ERROR}: ${sessionId}`);
     }
 
     return session.executeCommand(command, timeout);
@@ -250,7 +255,7 @@ export class SSHConnectionManager {
   getSessionOutput(sessionId: string, lines?: number, clear?: boolean): string[] {
     const session = this.sessions.get(sessionId);
     if (!session) {
-      throw new SSHError(`Session '${sessionId}' not found`);
+      throw new SSHError(`${SESSION_NOT_FOUND_ERROR}: ${sessionId}`);
     }
 
     return session.getBufferedOutput(lines, clear);

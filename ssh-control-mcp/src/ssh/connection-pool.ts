@@ -3,7 +3,13 @@ import { readFile } from 'fs/promises';
 import { ConnectionInfo } from './types.js';
 import { SSHError } from './errors.js';
 import { TIMEOUTS, SSH_CONFIG } from './constants.js';
-import { INVALID_ARGUMENTS_ERROR, NULL_OR_UNDEFINED_ARGUMENTS_ERROR } from '../constants.js';
+import { 
+  INVALID_ARGUMENTS_ERROR,
+  NULL_OR_UNDEFINED_ARGUMENTS_ERROR,
+  UNKNOWN_ERROR,
+  CONNECTION_TIMEOUT_ERROR,
+  CONNECTION_FAILED_ERROR
+ } from '../constants.js';
 
 /**
  * Manages a pool of SSH connections for reuse
@@ -27,7 +33,6 @@ export class ConnectionPool {
     privateKeyPath: string,
     port: number = 22
   ): Promise<Client> {
-    // Validate arguments
     if (host === null || host === undefined || username === null || username === undefined ||
         privateKeyPath === null || privateKeyPath === undefined) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
@@ -82,7 +87,7 @@ export class ConnectionPool {
       privateKey = await readFile(privateKeyPath);
     } catch (error) {
       throw new SSHError(
-        `Failed to read SSH private key from ${privateKeyPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to read SSH private key from ${privateKeyPath}: ${error instanceof Error ? error.message : UNKNOWN_ERROR}`
       );
     }
 
@@ -90,7 +95,7 @@ export class ConnectionPool {
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new SSHError('Connection timeout'));
+        reject(new SSHError(CONNECTION_TIMEOUT_ERROR));
       }, TIMEOUTS.KEEP_ALIVE_INTERVAL);
 
       client.on('ready', () => {
@@ -100,7 +105,7 @@ export class ConnectionPool {
 
       client.on('error', (err) => {
         clearTimeout(timeout);
-        reject(new SSHError(`Connection failed to ${host}:${port}: ${err.message}`, err));
+        reject(new SSHError(`${CONNECTION_FAILED_ERROR}: ${host}:${port}: ${err.message}`, err));
       });
 
       client.on('close', () => {
