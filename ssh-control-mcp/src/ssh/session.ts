@@ -58,8 +58,7 @@ export class PersistentSession extends EventEmitter {
     super();
 
     // Defensive parameter validation
-    if (sessionId === null || sessionId === undefined || target === null || target === undefined ||
-        username === null || username === undefined || client === null || client === undefined) {
+    if (sessionId == null || target == null || username == null || client == null) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
 

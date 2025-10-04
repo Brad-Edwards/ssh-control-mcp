@@ -46,11 +46,10 @@ export class SSHConnectionManager {
     port: number = 22,
     timeout: number = TIMEOUTS.DEFAULT_COMMAND
   ): Promise<CommandResult> {
-    if (host === null || host === undefined || username === null || username === undefined ||
-        privateKeyPath === null || privateKeyPath === undefined || command === null || command === undefined) {
+    if (host == null || username == null || privateKeyPath == null || command == null) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
-    if (!host || !username || !privateKeyPath || !command) {
+    if (host === '' || username === '' || privateKeyPath === '' || command === '') {
       throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: host, username, privateKeyPath, and command are required`);
     }
     if (port <= 0 || port > 65535) {
@@ -129,11 +128,10 @@ export class SSHConnectionManager {
     timeoutMs: number = TIMEOUTS.DEFAULT_SESSION,
     shellType: ShellType = 'bash'
   ): Promise<PersistentSession> {
-    if (sessionId === null || sessionId === undefined || target === null || target === undefined ||
-        username === null || username === undefined || privateKeyPath === null || privateKeyPath === undefined) {
+    if (sessionId == null || target == null || username == null || privateKeyPath == null) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
-    if (!sessionId || !target || !username || !privateKeyPath) {
+    if (sessionId === '' || target === '' || username === '' || privateKeyPath === '') {
       throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: sessionId, target, username, and privateKeyPath are required`);
     }
 
@@ -168,7 +166,7 @@ export class SSHConnectionManager {
    * @throws {Error} If sessionId is null, undefined, or empty
    */
   getSession(sessionId: string): PersistentSession | undefined {
-    if (sessionId === null || sessionId === undefined) {
+    if (sessionId == null) {
       throw new Error(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
     if (sessionId === '') {
@@ -192,7 +190,7 @@ export class SSHConnectionManager {
    * @throws {Error} If sessionId is null, undefined, or empty
    */
   async closeSession(sessionId: string): Promise<boolean> {
-    if (sessionId === null || sessionId === undefined) {
+    if (sessionId == null) {
       throw new Error(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
     if (sessionId === '') {

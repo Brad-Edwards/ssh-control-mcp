@@ -12,13 +12,6 @@ describe('expandTilde', () => {
     vi.mocked(homedir).mockReturnValue(mockHomedir);
   });
 
-  it('should throw error for null input', () => {
-    expect(() => expandTilde(null as any)).toThrow('Null or undefined arguments');
-  });
-
-  it('should throw error for undefined input', () => {
-    expect(() => expandTilde(undefined as any)).toThrow('Null or undefined arguments');
-  });
 
   it('should handle empty string input', () => {
     const result = expandTilde('');

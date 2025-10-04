@@ -376,4 +376,56 @@ describe('ConnectionPool', () => {
       expect(pool.getConnectionCount()).toBe(2);
     });
   });
+
+  describe('Connection Limits', () => {
+    it('should enforce max connections per host limit', async () => {
+      const { readFile } = await import('fs/promises');
+      vi.mocked(readFile).mockResolvedValue(Buffer.from('fake-key'));
+
+      mockClient.on.mockImplementation((event: string, handler: Function) => {
+        if (event === 'ready') {
+          process.nextTick(() => handler());
+        }
+        return mockClient;
+      });
+
+      // Create connections up to the limit (10)
+      const promises = [];
+      for (let i = 1; i <= 10; i++) {
+        const client = {
+          connect: vi.fn(),
+          end: vi.fn(),
+          on: vi.fn((event: string, handler: Function) => {
+            if (event === 'ready') {
+              process.nextTick(() => handler());
+            }
+            return client;
+          }),
+          once: vi.fn(),
+        };
+        vi.mocked(Client).mockImplementation(() => client as any);
+        promises.push(pool.getConnection(`host${i}`, 'user1', '/key1', 22));
+      }
+
+      await Promise.all(promises);
+      expect(pool.getConnectionCount()).toBe(10);
+
+      // Attempt to create 11th connection should fail
+      const client11 = {
+        connect: vi.fn(),
+        end: vi.fn(),
+        on: vi.fn((event: string, handler: Function) => {
+          if (event === 'ready') {
+            process.nextTick(() => handler());
+          }
+          return client11;
+        }),
+        once: vi.fn(),
+      };
+      vi.mocked(Client).mockImplementation(() => client11 as any);
+
+      await expect(pool.getConnection('host11', 'user1', '/key1', 22))
+        .rejects.toThrow('Maximum connection limit');
+    });
+  });
 });

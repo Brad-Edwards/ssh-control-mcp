@@ -33,11 +33,10 @@ export class ConnectionPool {
     privateKeyPath: string,
     port: number = 22
   ): Promise<Client> {
-    if (host === null || host === undefined || username === null || username === undefined ||
-        privateKeyPath === null || privateKeyPath === undefined) {
+    if (host == null || username == null || privateKeyPath == null) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
-    if (!host || !username || !privateKeyPath) {
+    if (host === '' || username === '' || privateKeyPath === '') {
       throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: host, username, and privateKeyPath are required`);
     }
     if (port <= 0 || port > 65535) {
@@ -45,24 +44,26 @@ export class ConnectionPool {
     }
 
     const connectionKey = `ssh-${username}@${host}:${port}`;
-    console.error(`[SSH-CLIENT] getConnection called with key: ${connectionKey}`);
 
     if (this.connections.has(connectionKey)) {
       const connInfo = this.connections.get(connectionKey)!;
       if (connInfo.connected) {
-        console.error(`[SSH-CLIENT] Reusing existing connection for: ${connectionKey}`);
         return connInfo.client;
       }
       // Connection is dead, remove it
-      console.error(`[SSH-CLIENT] Removing dead connection for: ${connectionKey}`);
       this.connections.delete(connectionKey);
     }
 
+    // Check connection limit
+    if (this.connections.size >= SSH_CONFIG.MAX_CONNECTIONS_PER_HOST) {
+      throw new SSHError(
+        `Maximum connection limit (${SSH_CONFIG.MAX_CONNECTIONS_PER_HOST}) reached. Close unused connections before creating new ones.`
+      );
+    }
+
     // Create new connection
-    console.error(`[SSH-CLIENT] Creating new connection for: ${connectionKey}`);
     const client = await this.createConnection(host, username, privateKeyPath, port);
     this.connections.set(connectionKey, { client, connected: true });
-    console.error(`[SSH-CLIENT] Connection cache now has ${this.connections.size} connections`);
 
     return client;
   }
@@ -96,7 +97,7 @@ export class ConnectionPool {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new SSHError(CONNECTION_TIMEOUT_ERROR));
-      }, TIMEOUTS.KEEP_ALIVE_INTERVAL);
+      }, TIMEOUTS.CONNECTION);
 
       client.on('ready', () => {
         clearTimeout(timeout);

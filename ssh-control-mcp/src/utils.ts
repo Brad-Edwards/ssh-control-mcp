@@ -9,9 +9,6 @@ import { resolve } from 'path';
  * @throws An error if the file path is null or undefined
  */
 export function expandTilde(filePath: string): string {
-  if (filePath === null || filePath === undefined) {
-    throw new Error(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
-  }
   if (filePath === '~') {
     return homedir();
   }
