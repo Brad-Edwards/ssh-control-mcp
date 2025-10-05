@@ -1,0 +1,33 @@
+{
+  "name": "my-ssh-instance",
+  "target": {
+    "host": "192.168.1.100",
+    "port": 22,
+    "username": "root",
+    "privateKeyPath": "/home/user/.ssh/id_rsa",
+    "shell": "bash"
+  },
+  "timeouts": {
+    "command": 30000,
+    "session": 600000,
+    "connection": 30000,
+    "keepAlive": 30000
+  },
+  "buffers": {
+    "maxSize": 10000,
+    "trimTo": 5000
+  },
+  "security": {
+    "allowedCommands": null,
+    "blockedCommands": [],
+    "maxSessions": 10,
+    "sessionTimeout": 600000,
+    "maxConnectionsPerHost": 10
+  },
+  "logging": {
+    "level": "info",
+    "includeCommands": true,
+    "includeResponses": false,
+    "maxResponseLength": 1000
+  }
+}

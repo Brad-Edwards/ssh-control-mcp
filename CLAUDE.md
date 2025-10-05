@@ -444,31 +444,59 @@ const merged = mergeWithDefaults(partialConfig);
 - Buffer trimTo must be <= maxSize
 - All required fields validated for non-empty strings
 
-### Configuration Usage (Future)
+### Configuration Usage
 
-Phase 3B will add configuration file loading:
+Configuration is loaded automatically from `./config/default.json`:
 
 ```typescript
-// Future API (not yet implemented)
 import { loadConfig } from './config/loader.js';
 
-const config = await loadConfig('config.json');
+// Loads from ./config/default.json
+const config = await loadConfig();
 const manager = new SSHConnectionManager(config);
 ```
+
+### Server Entry Point
+
+The server loads configuration and starts automatically:
+
+```typescript
+// src/server.ts
+const config = await loadConfig();
+const server = createServer(config);
+await startServer(server, { registerSignalHandlers: true });
+```
+
+### Configuration Files
+
+Each MCP server instance has its own config directory:
+
+```
+my-mcp-instance/
+  config/
+    default.json          # Active configuration
+    default.json.example  # Template
+    README.md             # Configuration documentation
+  node_modules/
+  dist/
+  package.json
+```
+
+Copy `default.json.example` to `default.json` and customize for your SSH target.
 
 ## Future Architecture (From notes/ARCHITECTURE.md)
 
 The project is planned to expand into a full MCP server with:
 
-- Configuration file loading (JSON/YAML) - Phase 3B
-- Environment variable expansion - Phase 3B
 - Multi-instance support (separate processes per target) - Phase 4
 - Multiple transports (stdio, HTTP with TLS) - Phase 6
+- Environment variable expansion for secrets - Future
 
 Phase 1: Core SSH extraction - Complete
 Phase 2: MCP protocol server - Complete
 Phase 3A: Configuration schema - Complete
-Phase 3B: Config file loading - Next
+Phase 3B: Config file loading - Complete
+Phase 4: Multi-instance management - Next
 
 ## Important Implementation Notes
 

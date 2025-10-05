@@ -99,7 +99,6 @@ export function createDefaultConfig(
  *   timeouts: { command: 60000 }
  * };
  * const complete = mergeWithDefaults(partial);
- * // complete.timeouts.session === DEFAULT_TIMEOUTS.session
  * ```
  */
 export function mergeWithDefaults(config: ServerConfig): ServerConfig {

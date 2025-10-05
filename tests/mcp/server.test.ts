@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createServer, startServer, stopServer } from '../../src/mcp/server.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { createDefaultConfig } from '../../src/config/defaults.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 vi.mock('@modelcontextprotocol/sdk/server/index.js');
@@ -43,6 +44,23 @@ describe('MCP Server', () => {
         }),
         expect.any(Object)
       );
+    });
+
+    it('should accept ServerConfig parameter', () => {
+      const config = createDefaultConfig('test', {
+        host: 'test.local',
+        port: 22,
+        username: 'user',
+        privateKeyPath: '/key',
+      });
+
+      const server = createServer(config);
+      expect(server).toBeInstanceOf(Server);
+    });
+
+    it('should work without config parameter for backward compatibility', () => {
+      const server = createServer();
+      expect(server).toBeInstanceOf(Server);
     });
   });
 
