@@ -108,6 +108,7 @@ describe('MCP Server', () => {
     it('should support complete startup flow', async () => {
       const mockServer = {
         connect: vi.fn().mockResolvedValue(undefined),
+        setRequestHandler: vi.fn(),
       } as any;
       const mockTransport = {};
 
@@ -120,6 +121,7 @@ describe('MCP Server', () => {
       expect(Server).toHaveBeenCalledTimes(1);
       expect(StdioServerTransport).toHaveBeenCalledTimes(1);
       expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
+      expect(mockServer.setRequestHandler).toHaveBeenCalled();
     });
   });
 
@@ -181,6 +183,7 @@ describe('MCP Server', () => {
       const mockServer = {
         connect: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined),
+        setRequestHandler: vi.fn(),
       } as any;
 
       vi.mocked(Server).mockReturnValue(mockServer as any);

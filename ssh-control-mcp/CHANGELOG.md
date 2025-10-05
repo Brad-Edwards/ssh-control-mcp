@@ -5,18 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.3] - 2025-10-04
 
 ### Added
 
-- Graceful shutdown support via stopServer() function
+- MCP tool definitions for all 6 SSH operations (src/mcp/tools.ts)
+- Tool request handlers with Zod schema validation (src/mcp/handlers.ts)
+- ssh_execute: one-off command execution without persistent session
+- ssh_session_create: create persistent SSH sessions (interactive/background)
+- ssh_session_execute: execute commands in existing sessions
+- ssh_session_list: list all active sessions with metadata
+- ssh_session_close: close and cleanup sessions
+- ssh_session_output: retrieve buffered output (max 50,000 lines per request)
+- Comprehensive test coverage for tools and handlers (54 tests)
+
+### Security
+
+- Input validation via Zod schemas for all MCP tool parameters
+- Output line limit (50,000) prevents memory exhaustion from accidental large requests
+- Session metadata filtering excludes sensitive data (environmentVars, commandHistory, workingDirectory)
+- Port range validation (1-65535) and timeout constraints
+
+## [0.1.2] - 2025-10-01
+
+### Added
+
+- MCP server initialization with stdio transport
+- Tool registration framework (ready for tool definitions)
+- Integration with @modelcontextprotocol/sdk v1.18.x
+- Comprehensive MCP server test suite (tests/mcp/server.test.ts)
+- Error handling for transport connection failures
+- JSDoc documentation for all MCP server functions
+- - Graceful shutdown support via stopServer() function
 - Signal handlers for SIGTERM and SIGINT (optional, via startServer options)
 - StartServerOptions interface for configuration
 - Comprehensive tests for shutdown lifecycle (26 MCP server tests total)
 - Defensive parameter validation across SSH module (PersistentSession and SSHConnectionManager)
 - ConnectionPool class for SSH connection reuse and lifecycle management (24 tests)
 - Comprehensive test suite for connection pooling with defensive coding tests
-
+  
 ### Changed
 
 - SSH module now uses centralized error constants for consistent error messaging
@@ -33,17 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSHConnectionManager now uses ConnectionPool internally for connection management
 - All existing tests continue to pass (110 total tests)
 - Public API remains backward compatible
-
-## [0.1.2] - 2025-10-01
-
-### Added
-
-- MCP server initialization with stdio transport
-- Tool registration framework (ready for tool definitions)
-- Integration with @modelcontextprotocol/sdk v1.18.x
-- Comprehensive MCP server test suite (tests/mcp/server.test.ts)
-- Error handling for transport connection failures
-- JSDoc documentation for all MCP server functions
 
 ## [0.1.1] - 2025-10-01
 
