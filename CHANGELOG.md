@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2025-10-05
+
+### Added
+
+- Configuration schema with Zod validation
+- Configuration file loading from ./config/default.json
+- Default configuration values aligned with existing constants
+- Server entry point with automatic config loading
+- Configuration documentation and examples
+
+### Changed
+
+- SSHConnectionManager accepts optional ServerConfig parameter
+- createServer accepts optional ServerConfig parameter
+
+### Security
+
+- Explicit configuration required (fails if config/default.json missing)
+- Unrestricted command access by default (red/blue team security model)
+- Optional command filtering via allowedCommands/blockedCommands regex
+- Physical instance isolation enforces security boundary
+
 ## [0.1.4] - 2025-10-05
 
 ### Added
@@ -20,15 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- MCP tool definitions for all 6 SSH operations (src/mcp/tools.ts)
-- Tool request handlers with Zod schema validation (src/mcp/handlers.ts)
+- MCP tool definitions for all 6 SSH operations
+- Tool request handlers with Zod schema validation
 - ssh_execute: one-off command execution without persistent session
 - ssh_session_create: create persistent SSH sessions (interactive/background)
 - ssh_session_execute: execute commands in existing sessions
 - ssh_session_list: list all active sessions with metadata
 - ssh_session_close: close and cleanup sessions
 - ssh_session_output: retrieve buffered output (max 50,000 lines per request)
-- Comprehensive test coverage for tools and handlers (54 tests)
+- Comprehensive test coverage for tools and handlers
 
 ### Security
 
@@ -44,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP server initialization with stdio transport
 - Tool registration framework (ready for tool definitions)
 - Integration with @modelcontextprotocol/sdk v1.18.x
-- Comprehensive MCP server test suite (tests/mcp/server.test.ts)
+- Comprehensive MCP server test suite
 - Error handling for transport connection failures
 - JSDoc documentation for all MCP server functions
 - - Graceful shutdown support via stopServer() function
@@ -52,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - StartServerOptions interface for configuration
 - Comprehensive tests for shutdown lifecycle (26 MCP server tests total)
 - Defensive parameter validation across SSH module (PersistentSession and SSHConnectionManager)
-- ConnectionPool class for SSH connection reuse and lifecycle management (24 tests)
+- ConnectionPool class for SSH connection reuse and lifecycle management
 - Comprehensive test suite for connection pooling with defensive coding tests
   
 ### Changed

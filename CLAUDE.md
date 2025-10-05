@@ -33,14 +33,14 @@ npm run typecheck && npm test   # Pre-publish checks
 
 ### Core Components
 
-**SSHConnectionManager** (src/ssh.ts:395-703)
+**SSHConnectionManager** (src/ssh/manager.ts)
 
 - Manages connection pooling and reuse across sessions
 - Creates and tracks persistent SSH sessions
 - Provides both one-off command execution and session-based execution
 - Connection key format: `ssh-${username}@${host}:${port}`
 
-**PersistentSession** (src/ssh.ts:75-393)
+**PersistentSession** (src/ssh/session.ts)
 
 - Manages individual SSH shell sessions with command queueing
 - Two session types: `interactive` (waits for completion) and `background` (queues and buffers output)
@@ -56,6 +56,14 @@ npm run typecheck && npm test   # Pre-publish checks
   - Parse command output and extract exit codes
   - Generate appropriate keep-alive commands
 - Critical for multi-platform compatibility
+
+**Configuration System** (src/config/)
+
+- Zod-based schema validation for type-safe configuration
+- Default values aligned with current constants
+- Modular configuration sections: target, timeouts, buffers, security, logging
+- Runtime validation with helpful error messages
+- Designed for future config file loading (Phase 3B)
 
 ### Session Management Pattern
 
@@ -96,9 +104,17 @@ Command execution flow:
 
 Test files are in `tests/`:
 
-- `ssh.test.ts` - Core SSH session management
+- `ssh/session.test.ts` - Core SSH session management
+- `ssh/manager.test.ts` - Connection manager and pooling
+- `ssh/connection-pool.test.ts` - Connection pool behavior
 - `shells.test.ts` - Shell formatter implementations
+- `config/schema.test.ts` - Configuration schema validation
+- `config/defaults.test.ts` - Default values and merging
+- `mcp/server.test.ts` - MCP server lifecycle
+- `mcp/tools.test.ts` - MCP tool definitions
+- `mcp/handlers.test.ts` - MCP tool handlers
 - `integration.test.ts` - End-to-end workflows
+- `mcp-integration.test.ts` - MCP protocol integration
 - `utils.test.ts` - Utility functions
 
 **Unit tests must cover:**
@@ -113,13 +129,23 @@ Test files are in `tests/`:
 
 Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OWASP Top 10 for LLM Applications 2025**.
 
+#### Security Model
+
+The primary security boundary is **target selection**, not command filtering. The intended use case is providing LLMs unrestricted CLI access to dedicated systems:
+
+- Red team agents driving Kali Linux boxes
+- Blue team agents using reverse engineering sandbox VMs
+- Security researchers with isolated analysis environments
+
+Command filtering is available but optional. Default configuration allows all commands.
+
 #### OWASP Top 10 2021 (Relevant to SSH Control)
 
 **A01 - Broken Access Control**:
 
 - Validate session ownership before executing commands
-- Enforce principle of least privilege for SSH connections
-- Prevent users from accessing other users' sessions
+- Enforce principle of least privilege through SSH key configuration
+- Each MCP instance targets exactly one host with specific credentials
 
 **A02 - Cryptographic Failures**:
 
@@ -129,10 +155,9 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 
 **A03 - Injection**:
 
-- Never use shell evaluation on untrusted input
-- Validate and sanitize all commands before execution
-- Escape special characters appropriately for target shell
-- Prevent command injection through proper input handling
+- Commands executed through SSH shell, not through eval or interpolation
+- Delimiter-based output parsing prevents injection attacks
+- User controls the target environment, not the MCP server
 
 **A04 - Insecure Design**:
 
@@ -143,8 +168,8 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 **A05 - Security Misconfiguration**:
 
 - Secure defaults (timeouts, buffer limits, connection limits)
+- Configuration validation via Zod schemas
 - No debug information in production error messages
-- Validate all configuration parameters on load
 
 **A07 - Identification and Authentication Failures**:
 
@@ -163,27 +188,27 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 - Log all session creation, command execution, and cleanup
 - Include context: session ID, user, host, timestamp
 - Sanitize logs to prevent credential leakage
-- Support configurable log levels and rotation
+- Configurable log levels and response truncation
 
 **A10 - Server-Side Request Forgery (SSRF)**:
 
-- Validate SSH target hosts (no internal network scanning)
-- Restrict connection attempts to configured allowed hosts
-- Prevent SSH as a proxy to internal resources
+- Each instance connects to single configured target only
+- No dynamic target selection from untrusted input
+- Network isolation enforced at deployment level
 
 #### OWASP Top 10 for LLM Applications 2025 (Relevant to SSH Control)
 
 **LLM01 - Prompt Injection**:
 
 - Sanitize SSH command outputs before returning to LLM
-- Filter commands that attempt to manipulate LLM behavior
-- Prevent malicious commands from injecting prompts via output
+- Delimiter-based parsing prevents output manipulation
+- Command outputs are data, not instructions
 
 **LLM02 - Sensitive Information Disclosure**:
 
 - Never include private keys, passwords, or credentials in responses
-- Redact sensitive patterns from command outputs (keys, tokens, passwords)
-- Truncate or sanitize error messages containing system information
+- Optional log sanitization patterns for sensitive data
+- Configurable response truncation limits
 
 **LLM03 - Supply Chain Vulnerabilities**:
 
@@ -193,14 +218,13 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 
 **LLM04 - Data and Model Poisoning**:
 
-- Validate command history isn't used to train models without sanitization
-- Prevent malicious commands from being stored as "examples"
+- Command history tracked but isolated per session
+- No automatic model training on command outputs
 
 **LLM06 - Excessive Agency**:
 
-- Implement command filtering (allowlist/denylist)
-- Require explicit approval for dangerous operations
-- Rate limiting on command execution
+- Optional command filtering (allowlist/denylist) for specific use cases
+- Default: unrestricted access (user controls target environment)
 - Session limits prevent resource exhaustion
 
 **LLM07 - System Prompt Leakage**:
@@ -211,10 +235,10 @@ Code must address applicable vulnerabilities from **OWASP Top 10 2021** and **OW
 
 **LLM10 - Unbounded Consumption**:
 
-- Buffer size limits prevent memory exhaustion (10k entries max)
-- Session limits prevent resource exhaustion
-- Command timeouts prevent runaway processes
-- Connection limits per target host
+- Buffer size limits prevent memory exhaustion (10k entries max, configurable)
+- Session limits prevent resource exhaustion (configurable)
+- Command timeouts prevent runaway processes (configurable)
+- Connection limits per target host (configurable)
 
 ### Code Quality Principles
 
@@ -335,17 +359,144 @@ Commit message requirements:
 - Keep messages professional and focused on technical changes
 - Follow standard commit message format: concise subject, optional detailed body
 
+## Configuration System
+
+The configuration system provides type-safe, validated configuration for MCP server instances.
+
+### Configuration Schema
+
+Configuration is defined using Zod schemas in `src/config/schema.ts`:
+
+```typescript
+import { ServerConfigSchema, type ServerConfig } from './config/schema.js';
+
+// Validate configuration
+const result = ServerConfigSchema.safeParse(config);
+if (!result.success) {
+  // Handle validation errors
+}
+```
+
+### Configuration Sections
+
+**target** (required): SSH target connection parameters
+
+- `host`: Target hostname or IP
+- `port`: SSH port (1-65535)
+- `username`: SSH username
+- `privateKeyPath`: Path to SSH private key file
+- `passphrase`: Optional key passphrase
+- `shell`: Shell type (bash, sh, powershell, cmd) - defaults to bash
+
+**timeouts** (optional): Timeout values in milliseconds
+
+- `command`: Command execution timeout (default: 30000ms)
+- `session`: Session inactivity timeout (default: 600000ms)
+- `connection`: SSH connection timeout (default: 30000ms)
+- `keepAlive`: Keep-alive interval (default: 30000ms)
+
+**buffers** (optional): Output buffer limits for background sessions
+
+- `maxSize`: Maximum buffer entries (default: 10000)
+- `trimTo`: Size to trim to when max exceeded (default: 5000)
+
+**security** (optional): Security and resource limits
+
+- `allowedCommands`: Regex whitelist (default: undefined = allow all)
+- `blockedCommands`: Regex blacklist (default: [] = block none)
+- `maxSessions`: Max concurrent sessions (default: 10)
+- `sessionTimeout`: Session timeout in ms (default: 600000ms)
+- `maxConnectionsPerHost`: Max connections per host (default: 10)
+
+**logging** (optional): Logging configuration
+
+- `level`: Log level (debug, info, warn, error) - default: info
+- `includeCommands`: Log executed commands (default: true)
+- `includeResponses`: Log command responses (default: false)
+- `maxResponseLength`: Truncate logged responses (default: 1000)
+
+### Default Values
+
+Default values are defined in `src/config/defaults.ts` and align with existing constants:
+
+```typescript
+import { createDefaultConfig, mergeWithDefaults } from './config/defaults.js';
+
+// Create config with all defaults
+const config = createDefaultConfig('my-instance', {
+  host: 'kali.local',
+  port: 22,
+  username: 'root',
+  privateKeyPath: '/keys/kali_rsa',
+});
+
+// Merge partial config with defaults
+const merged = mergeWithDefaults(partialConfig);
+```
+
+### Validation Rules
+
+- Ports: 1-65535
+- Timeouts: 1-3600000ms (1ms to 1hr)
+- Buffer sizes: 1-100000 entries
+- Session limits: 1-100 sessions
+- Regex patterns: Must compile without errors
+- Buffer trimTo must be <= maxSize
+- All required fields validated for non-empty strings
+
+### Configuration Usage
+
+Configuration is loaded automatically from `./config/default.json`:
+
+```typescript
+import { loadConfig } from './config/loader.js';
+
+// Loads from ./config/default.json
+const config = await loadConfig();
+const manager = new SSHConnectionManager(config);
+```
+
+### Server Entry Point
+
+The server loads configuration and starts automatically:
+
+```typescript
+// src/server.ts
+const config = await loadConfig();
+const server = createServer(config);
+await startServer(server, { registerSignalHandlers: true });
+```
+
+### Configuration Files
+
+Each MCP server instance has its own config directory:
+
+```
+my-mcp-instance/
+  config/
+    default.json          # Active configuration
+    default.json.example  # Template
+    README.md             # Configuration documentation
+  node_modules/
+  dist/
+  package.json
+```
+
+Copy `default.json.example` to `default.json` and customize for your SSH target.
+
 ## Future Architecture (From notes/ARCHITECTURE.md)
 
 The project is planned to expand into a full MCP server with:
 
-- Configuration system (JSON/YAML config loading)
-- Security layer (command filtering, input validation, audit logging)
-- Multi-instance support (separate processes per target)
-- Multiple transports (stdio, HTTP with TLS)
+- Multi-instance support (separate processes per target) - Phase 4
+- Multiple transports (stdio, HTTP with TLS) - Phase 6
+- Environment variable expansion for secrets - Future
 
-Phase 1 (current): Core SSH extraction from existing codebase is complete
-Phase 2 (next): Implementing MCP protocol server layer
+Phase 1: Core SSH extraction - Complete
+Phase 2: MCP protocol server - Complete
+Phase 3A: Configuration schema - Complete
+Phase 3B: Config file loading - Complete
+Phase 4: Multi-instance management - Next
 
 ## Important Implementation Notes
 

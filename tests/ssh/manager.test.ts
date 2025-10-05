@@ -1,11 +1,51 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SSHConnectionManager } from '../../src/ssh/manager.js';
+import { createDefaultConfig } from '../../src/config/defaults.js';
+import type { ServerConfig } from '../../src/config/schema.js';
 
 describe('SSHConnectionManager', () => {
   let manager: SSHConnectionManager;
 
   beforeEach(() => {
     manager = new SSHConnectionManager();
+  });
+
+  describe('Constructor', () => {
+    it('should create manager without config', () => {
+      const mgr = new SSHConnectionManager();
+      expect(mgr).toBeDefined();
+      expect(mgr).toBeInstanceOf(SSHConnectionManager);
+    });
+
+    it('should create manager with config', () => {
+      const config = createDefaultConfig('test', {
+        host: 'test.local',
+        port: 22,
+        username: 'user',
+        privateKeyPath: '/key',
+      });
+      const mgr = new SSHConnectionManager(config);
+      expect(mgr).toBeDefined();
+      expect(mgr).toBeInstanceOf(SSHConnectionManager);
+    });
+
+    it('should accept partial config', () => {
+      const config: ServerConfig = {
+        name: 'test',
+        target: {
+          host: 'host',
+          port: 22,
+          username: 'user',
+          privateKeyPath: '/key',
+          shell: 'bash',
+        },
+        timeouts: {
+          command: 60000,
+        },
+      };
+      const mgr = new SSHConnectionManager(config);
+      expect(mgr).toBeDefined();
+    });
   });
 
   describe('Session Management', () => {

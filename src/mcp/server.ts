@@ -4,20 +4,22 @@ import { NULL_OR_UNDEFINED_ARGUMENTS_ERROR, FAILED_TO_START_MCP_SERVER_ERROR } f
 import pkg from '../../package.json' with { type: 'json' };
 import { SSHConnectionManager } from '../ssh/manager.js';
 import { registerToolHandlers } from './handlers.js';
+import type { ServerConfig } from '../config/schema.js';
 
 /**
  * Create and configure the MCP server instance
  *
- * @param manager - Optional SSH connection manager instance. If not provided, a new one will be created.
+ * @param config - Optional server configuration. If provided, will be used to configure the SSH connection manager.
  * @returns A configured MCP server instance ready to be started
  *
  * @example
  * ```typescript
- * const server = createServer();
+ * const config = await loadConfig();
+ * const server = createServer(config);
  * await startServer(server);
  * ```
  */
-export function createServer(manager?: SSHConnectionManager): Server {
+export function createServer(config?: ServerConfig): Server {
   const server = new Server(
     {
       name: 'ssh-control-mcp',
@@ -31,7 +33,7 @@ export function createServer(manager?: SSHConnectionManager): Server {
   );
 
   // Register tool handlers with SSH connection manager
-  const sshManager = manager || new SSHConnectionManager();
+  const sshManager = new SSHConnectionManager(config);
   registerToolHandlers(server, sshManager);
 
   return server;

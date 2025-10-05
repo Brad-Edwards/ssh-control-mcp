@@ -3,7 +3,7 @@ import { ConnectionPool } from './connection-pool.js';
 import { CommandResult, SessionType, SessionMode, SessionMetadata } from './types.js';
 import { SSHError } from './errors.js';
 import { ShellType } from '../shells.js';
-import { 
+import {
   INVALID_ARGUMENTS_ERROR,
   NULL_OR_UNDEFINED_ARGUMENTS_ERROR,
   COMMAND_TIMEOUT_ERROR,
@@ -13,6 +13,7 @@ import {
   STREAM_ERROR
 } from '../constants.js';
 import { TIMEOUTS } from './constants.js';
+import type { ServerConfig } from '../config/schema.js';
 
 /**
  * Manages SSH connections and persistent sessions
@@ -20,10 +21,16 @@ import { TIMEOUTS } from './constants.js';
 export class SSHConnectionManager {
   private pool: ConnectionPool;
   private sessions: Map<string, PersistentSession>;
+  private config?: ServerConfig;
 
-  constructor() {
+  /**
+   * Create a new SSH connection manager
+   * @param config - Optional server configuration. If provided, configuration values will be used for sessions.
+   */
+  constructor(config?: ServerConfig) {
     this.pool = new ConnectionPool();
     this.sessions = new Map();
+    this.config = config;
   }
 
   /**
