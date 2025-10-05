@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2025-10-05
+
+### Added
+
+- MCP integration test suite
+- End-to-end request/response flow tests for all 6 MCP tools
+- MCP protocol compliance validation (response structure, JSON serialization)
+- Error propagation tests across MCP and SSH layers
+- Zod validation error handling tests
+- Edge case tests (empty output, large output, special characters)
+
 ## [0.1.3] - 2025-10-04
 
 ### Added
