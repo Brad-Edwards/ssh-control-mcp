@@ -2,10 +2,13 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { NULL_OR_UNDEFINED_ARGUMENTS_ERROR, FAILED_TO_START_MCP_SERVER_ERROR } from '../constants.js';
 import pkg from '../../package.json' with { type: 'json' };
+import { SSHConnectionManager } from '../ssh/manager.js';
+import { registerToolHandlers } from './handlers.js';
 
 /**
  * Create and configure the MCP server instance
  *
+ * @param manager - Optional SSH connection manager instance. If not provided, a new one will be created.
  * @returns A configured MCP server instance ready to be started
  *
  * @example
@@ -14,7 +17,7 @@ import pkg from '../../package.json' with { type: 'json' };
  * await startServer(server);
  * ```
  */
-export function createServer(): Server {
+export function createServer(manager?: SSHConnectionManager): Server {
   const server = new Server(
     {
       name: 'ssh-control-mcp',
@@ -27,8 +30,9 @@ export function createServer(): Server {
     }
   );
 
-  // Tool registration framework placeholder
-  // Tools will be registered in subsequent issues
+  // Register tool handlers with SSH connection manager
+  const sshManager = manager || new SSHConnectionManager();
+  registerToolHandlers(server, sshManager);
 
   return server;
 }
