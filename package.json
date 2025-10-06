@@ -4,6 +4,9 @@
     "description": "",
     "type": "module",
     "main": "dist/index.js",
+    "bin": {
+        "ssh-control-mcp": "dist/cli.js"
+    },
     "scripts": {
         "build": "tsc",
         "test": "vitest run",
