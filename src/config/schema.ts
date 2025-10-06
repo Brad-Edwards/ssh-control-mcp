@@ -74,6 +74,20 @@ export const SecurityConfigSchema = z.object({
 });
 
 /**
+ * Audit logging configuration schema
+ * Defines audit trail settings
+ */
+export const AuditConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  filePath: z.string().optional(),
+  maxFiles: z.string().optional(),
+  maxSize: z.string().optional(),
+  sanitizePatterns: z.array(z.string().refine(isValidRegex, {
+    message: 'Invalid regex pattern',
+  })).optional(),
+});
+
+/**
  * Logging configuration schema
  * Defines what and how to log
  */
@@ -82,6 +96,7 @@ export const LoggingConfigSchema = z.object({
   includeCommands: z.boolean().optional(),
   includeResponses: z.boolean().optional(),
   maxResponseLength: z.number().int().min(1).max(100000).optional(),
+  audit: AuditConfigSchema.optional(),
 });
 
 /**
@@ -104,5 +119,6 @@ export type SSHTargetConfig = z.infer<typeof SSHTargetConfigSchema>;
 export type TimeoutsConfig = z.infer<typeof TimeoutsConfigSchema>;
 export type BuffersConfig = z.infer<typeof BuffersConfigSchema>;
 export type SecurityConfig = z.infer<typeof SecurityConfigSchema>;
+export type AuditConfig = z.infer<typeof AuditConfigSchema>;
 export type LoggingConfig = z.infer<typeof LoggingConfigSchema>;
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;

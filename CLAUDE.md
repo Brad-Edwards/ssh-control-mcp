@@ -116,6 +116,7 @@ Test files are in `tests/`:
 - `integration.test.ts` - End-to-end workflows
 - `mcp-integration.test.ts` - MCP protocol integration
 - `utils.test.ts` - Utility functions
+- `security/audit.test.ts` - Audit logging and sanitization
 
 **Unit tests must cover:**
 
@@ -359,6 +360,96 @@ Commit message requirements:
 - Keep messages professional and focused on technical changes
 - Follow standard commit message format: concise subject, optional detailed body
 
+## Audit Logging
+
+Comprehensive audit logging system for security compliance and forensics.
+
+### Architecture
+
+**AuditLogger** (src/security/audit.ts)
+
+- Winston-based structured logging with daily rotation
+- Sanitizes sensitive data (credentials, keys, passphrases)
+- JSON format for machine processing
+- Configurable log levels and retention
+
+**Sanitization** (src/security/sanitize.ts)
+
+- Redacts private key paths (shows basename only)
+- Removes passphrases and passwords from logs
+- Pattern-based credential detection (tokens, API keys)
+- Configurable regex patterns for custom sanitization
+- Truncates long outputs to prevent log bloat
+
+### Event Types
+
+- SESSION_CREATED: Session initialization with metadata
+- SESSION_CLOSED: Session termination with reason
+- COMMAND_EXECUTED: Command execution with exit code and duration
+- CONNECTION_ESTABLISHED: SSH connection success
+- CONNECTION_FAILED: SSH connection failure with error
+- ERROR_OCCURRED: Error events with context
+
+### Security Compliance
+
+Addresses OWASP security requirements:
+
+- A09 (Security Logging): All operations logged with context
+- A02 (Cryptographic Failures): No credentials in logs
+- A08 (Data Integrity): Immutable audit trail with timestamps
+- LLM02 (Information Disclosure): Sanitized command outputs
+
+### Log Format
+
+```json
+{
+  "timestamp": "2025-10-05T18:00:00.000Z",
+  "level": "info",
+  "event": "COMMAND_EXECUTED",
+  "sessionId": "session-123",
+  "target": "kali.local:22",
+  "username": "root",
+  "command": "ls -la",
+  "exitCode": 0,
+  "duration": 150
+}
+```
+
+### Configuration
+
+Audit logging enabled by default, configured in logging.audit section:
+
+```typescript
+{
+  logging: {
+    audit: {
+      enabled: true,
+      filePath: './logs/audit.log',
+      maxFiles: '30d',  // 30 day retention
+      maxSize: '20m',   // Rotate at 20MB
+      sanitizePatterns: [] // Custom regex patterns
+    }
+  }
+}
+```
+
+### Usage
+
+Audit logging is automatic when SSHConnectionManager is created with config:
+
+```typescript
+import { SSHConnectionManager } from './ssh/manager.js';
+import { loadConfig } from './config/loader.js';
+
+const config = await loadConfig();
+const manager = new SSHConnectionManager(config);
+
+// All operations are automatically logged to audit trail
+await manager.createSession(/*...*/);  // Logged
+await manager.executeCommand(/*...*/); // Logged
+await manager.closeSession(/*...*/);   // Logged
+```
+
 ## Configuration System
 
 The configuration system provides type-safe, validated configuration for MCP server instances.
@@ -414,6 +505,12 @@ if (!result.success) {
 - `includeCommands`: Log executed commands (default: true)
 - `includeResponses`: Log command responses (default: false)
 - `maxResponseLength`: Truncate logged responses (default: 1000)
+- `audit`: Audit logging configuration (default: enabled)
+  - `enabled`: Enable audit trail (default: true)
+  - `filePath`: Path to audit log file (default: ./logs/audit.log)
+  - `maxFiles`: Retention period (default: 30d for 30 days)
+  - `maxSize`: Max file size before rotation (default: 20m)
+  - `sanitizePatterns`: Custom regex patterns for sanitization (default: [])
 
 ### Default Values
 

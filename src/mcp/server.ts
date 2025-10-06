@@ -32,7 +32,6 @@ export function createServer(config?: ServerConfig): Server {
     }
   );
 
-  // Register tool handlers with SSH connection manager
   const sshManager = new SSHConnectionManager(config);
   registerToolHandlers(server, sshManager);
 

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.1.7] - 2025-10-05
+
+### Added
+
+- Comprehensive audit logging system with Winston
+- Automatic credential sanitization (private keys, passphrases, tokens, API keys)
+- Structured JSON logs with daily rotation (30-day retention, 20MB files)
+- Six audit event types: SESSION_CREATED, SESSION_CLOSED, COMMAND_EXECUTED, CONNECTION_ESTABLISHED, CONNECTION_FAILED, ERROR_OCCURRED
+- Configurable log levels with optional console output in debug mode
+- Custom sanitization patterns via configuration
+
+### Security
+
+- OWASP A09: All operations logged with session context and timestamps
+- OWASP A02: No credentials in logs (sanitization enforced)
+- OWASP A08: Immutable audit trail for compliance
+- OWASP LLM02: Command outputs sanitized before logging
+
 ## [0.1.6] - 2025-10-05
 
 ### Added

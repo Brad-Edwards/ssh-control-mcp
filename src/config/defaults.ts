@@ -3,6 +3,7 @@ import type {
   TimeoutsConfig,
   BuffersConfig,
   SecurityConfig,
+  AuditConfig,
   LoggingConfig,
   ServerConfig,
   SSHTargetConfig,
@@ -41,6 +42,18 @@ export const DEFAULT_SECURITY: Required<SecurityConfig> = {
 };
 
 /**
+ * Default audit configuration
+ * Audit logging enabled by default with 30-day retention
+ */
+export const DEFAULT_AUDIT: Required<AuditConfig> = {
+  enabled: true,
+  filePath: './logs/audit.log',
+  maxFiles: '30d',
+  maxSize: '20m',
+  sanitizePatterns: [],
+};
+
+/**
  * Default logging configuration
  * Log commands for audit but not responses by default
  */
@@ -49,6 +62,7 @@ export const DEFAULT_LOGGING: Required<LoggingConfig> = {
   includeCommands: true,
   includeResponses: false,
   maxResponseLength: 1000,
+  audit: DEFAULT_AUDIT,
 };
 
 /**
@@ -137,6 +151,15 @@ export function mergeWithDefaults(config: ServerConfig): ServerConfig {
           includeCommands: config.logging.includeCommands ?? DEFAULT_LOGGING.includeCommands,
           includeResponses: config.logging.includeResponses ?? DEFAULT_LOGGING.includeResponses,
           maxResponseLength: config.logging.maxResponseLength ?? DEFAULT_LOGGING.maxResponseLength,
+          audit: config.logging.audit
+            ? {
+                enabled: config.logging.audit.enabled ?? DEFAULT_AUDIT.enabled,
+                filePath: config.logging.audit.filePath ?? DEFAULT_AUDIT.filePath,
+                maxFiles: config.logging.audit.maxFiles ?? DEFAULT_AUDIT.maxFiles,
+                maxSize: config.logging.audit.maxSize ?? DEFAULT_AUDIT.maxSize,
+                sanitizePatterns: config.logging.audit.sanitizePatterns ?? DEFAULT_AUDIT.sanitizePatterns,
+              }
+            : DEFAULT_AUDIT,
         }
       : DEFAULT_LOGGING,
   };

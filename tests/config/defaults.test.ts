@@ -278,6 +278,13 @@ describe('Configuration Defaults', () => {
           includeCommands: false,
           includeResponses: true,
           maxResponseLength: 500,
+          audit: {
+            enabled: true,
+            filePath: './logs/audit.log',
+            maxFiles: '30d',
+            maxSize: '20m',
+            sanitizePatterns: [],
+          },
         },
       };
 

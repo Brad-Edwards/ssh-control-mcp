@@ -14,6 +14,7 @@ import {
 } from '../constants.js';
 import { TIMEOUTS } from './constants.js';
 import type { ServerConfig } from '../config/schema.js';
+import { AuditLogger, AuditEvent } from '../security/audit.js';
 
 /**
  * Manages SSH connections and persistent sessions
@@ -22,6 +23,7 @@ export class SSHConnectionManager {
   private pool: ConnectionPool;
   private sessions: Map<string, PersistentSession>;
   private config?: ServerConfig;
+  private auditLogger?: AuditLogger;
 
   /**
    * Create a new SSH connection manager
@@ -31,6 +33,14 @@ export class SSHConnectionManager {
     this.pool = new ConnectionPool();
     this.sessions = new Map();
     this.config = config;
+
+    // Initialize audit logger if enabled in config
+    if (config?.logging?.audit?.enabled !== false) {
+      this.auditLogger = new AuditLogger(
+        config?.logging,
+        config?.logging?.audit?.filePath
+      );
+    }
   }
 
   /**
@@ -66,7 +76,27 @@ export class SSHConnectionManager {
       throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: timeout must be positive`);
     }
 
-    const client = await this.pool.getConnection(host, username, privateKeyPath, port);
+    const startTime = Date.now();
+    let client;
+
+    try {
+      client = await this.pool.getConnection(host, username, privateKeyPath, port);
+
+      // Log connection established
+      this.auditLogger?.logEvent(AuditEvent.CONNECTION_ESTABLISHED, {
+        target: `${host}:${port}`,
+        username,
+        connectionId: `ssh-${username}@${host}:${port}`,
+      });
+    } catch (err) {
+      // Log connection failure
+      this.auditLogger?.logEvent(AuditEvent.CONNECTION_FAILED, {
+        target: `${host}:${port}`,
+        username,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
 
     return new Promise((resolve, reject) => {
       const timeoutHandle = setTimeout(() => {
@@ -79,6 +109,16 @@ export class SSHConnectionManager {
       client.exec(command, (err, stream) => {
         if (err) {
           clearTimeout(timeoutHandle);
+
+          // Log command execution error
+          this.auditLogger?.logEvent(AuditEvent.ERROR_OCCURRED, {
+            target: `${host}:${port}`,
+            username,
+            command,
+            error: err.message,
+            errorCode: 'EXEC_FAILED',
+          });
+
           reject(new SSHError(`Failed to execute command: ${err.message}`, err));
           return;
         }
@@ -93,16 +133,40 @@ export class SSHConnectionManager {
 
         stream.on('close', (code: number, signal: string) => {
           clearTimeout(timeoutHandle);
-          resolve({
+
+          const result = {
             stdout,
             stderr,
             code: code ?? null,
             signal: signal ?? null,
+          };
+
+          // Log command execution
+          this.auditLogger?.logEvent(AuditEvent.COMMAND_EXECUTED, {
+            target: `${host}:${port}`,
+            username,
+            command,
+            exitCode: code ?? null,
+            duration: Date.now() - startTime,
+            stdout,
+            stderr,
           });
+
+          resolve(result);
         });
 
         stream.on('error', (err: Error) => {
           clearTimeout(timeoutHandle);
+
+          // Log stream error
+          this.auditLogger?.logEvent(AuditEvent.ERROR_OCCURRED, {
+            target: `${host}:${port}`,
+            username,
+            command,
+            error: err.message,
+            errorCode: 'STREAM_ERROR',
+          });
+
           reject(new SSHError(`${STREAM_ERROR}: ${err.message}`, err));
         });
       });
@@ -160,8 +224,21 @@ export class SSHConnectionManager {
       shellType
     );
 
+    // Set audit logger for session
+    session.setAuditLogger(this.auditLogger);
+
     await session.initialize();
     this.sessions.set(sessionId, session);
+
+    // Log session creation
+    this.auditLogger?.logEvent(AuditEvent.SESSION_CREATED, {
+      sessionId,
+      target: `${target}:${port}`,
+      username,
+      type,
+      mode,
+      privateKeyPath,
+    });
 
     return session;
   }
@@ -209,8 +286,19 @@ export class SSHConnectionManager {
       return false;
     }
 
+    const sessionInfo = session.getSessionInfo();
+
     await session.close();
     this.sessions.delete(sessionId);
+
+    // Log session closure
+    this.auditLogger?.logEvent(AuditEvent.SESSION_CLOSED, {
+      sessionId,
+      target: `${sessionInfo.target}:${sessionInfo.port}`,
+      username: sessionInfo.username,
+      reason: 'user_requested',
+    });
+
     return true;
   }
 

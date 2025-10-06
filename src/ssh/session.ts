@@ -11,6 +11,7 @@ import {
 } from './types.js';
 import { SSHError } from './errors.js';
 import { TIMEOUTS, BUFFER_LIMITS } from './constants.js';
+import { AuditLogger, AuditEvent } from '../security/audit.js';
 
 /**
  * A persistent session with a shell
@@ -28,6 +29,7 @@ export class PersistentSession extends EventEmitter {
   private isInitialized = false;
   private outputData = '';
   private shellFormatter: ShellFormatter;
+  private auditLogger?: AuditLogger;
 
   private sessionTimeoutMs: number;
 
@@ -93,6 +95,14 @@ export class PersistentSession extends EventEmitter {
       isActive: false,
       commandHistory: []
     };
+  }
+
+  /**
+   * Set the audit logger for this session
+   * @param logger - The audit logger instance
+   */
+  setAuditLogger(logger: AuditLogger | undefined): void {
+    this.auditLogger = logger;
   }
 
   /**
@@ -329,12 +339,25 @@ export class PersistentSession extends EventEmitter {
 
         const cleanOutput = lines.join('\n');
 
-        this.currentCommand.resolve({
+        const result = {
           stdout: cleanOutput,
           stderr: '',
           code: exitCode,
           signal: null
+        };
+
+        // Log command execution
+        this.auditLogger?.logEvent(AuditEvent.COMMAND_EXECUTED, {
+          sessionId: this.sessionInfo.sessionId,
+          target: `${this.sessionInfo.target}:${this.sessionInfo.port}`,
+          username: this.sessionInfo.username,
+          command: this.currentCommand.command,
+          exitCode,
+          stdout: cleanOutput,
+          stderr: '',
         });
+
+        this.currentCommand.resolve(result);
 
         this.currentCommand = null;
         this.processNextCommand();
