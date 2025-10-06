@@ -1,0 +1,20 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "exclude": ["**/*.test.ts", "**/tests/**"],
+  "plugin": [],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "readme": "README.md",
+  "name": "ssh-control-mcp",
+  "includeVersion": true,
+  "sort": ["source-order"],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "categorizeByGroup": false,
+  "searchInComments": true,
+  "searchInDocuments": true
+}

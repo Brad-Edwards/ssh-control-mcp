@@ -50,3 +50,6 @@ coverage/
 dist/
 
 logs/
+
+# Generated API documentation
+docs/api/
