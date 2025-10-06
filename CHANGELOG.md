@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2025-10-05
+
+### Added
+
+- Command-line interface with argument parsing
+- Config file path override via --config flag
+- Runtime config overrides for host, port, username, key, passphrase, shell
+- Help and version flags
+- Executable binary via package.json bin field
+
 ## [0.1.5] - 2025-10-05
 
 ### Added
