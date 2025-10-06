@@ -30,6 +30,7 @@ export class PersistentSession extends EventEmitter {
   private outputData = '';
   private shellFormatter: ShellFormatter;
   private auditLogger?: AuditLogger;
+  private commandFilter?: (command: string) => void;
 
   private sessionTimeoutMs: number;
 
@@ -59,7 +60,6 @@ export class PersistentSession extends EventEmitter {
   ) {
     super();
 
-    // Defensive parameter validation
     if (sessionId == null || target == null || username == null || client == null) {
       throw new SSHError(NULL_OR_UNDEFINED_ARGUMENTS_ERROR);
     }
@@ -103,6 +103,14 @@ export class PersistentSession extends EventEmitter {
    */
   setAuditLogger(logger: AuditLogger | undefined): void {
     this.auditLogger = logger;
+  }
+
+  /**
+   * Set the command filter for this session
+   * @param filter - Function that throws if command not allowed
+   */
+  setCommandFilter(filter: (command: string) => void): void {
+    this.commandFilter = filter;
   }
 
   /**
@@ -173,6 +181,10 @@ export class PersistentSession extends EventEmitter {
 
     if (!this.isInitialized || !this.shell || !this.sessionInfo.isActive) {
       throw new SSHError('Session not initialized or inactive');
+    }
+
+    if (this.commandFilter) {
+      this.commandFilter(command);
     }
 
     // Background sessions should return immediately after queuing
