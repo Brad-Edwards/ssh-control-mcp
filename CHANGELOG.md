@@ -17,13 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable log levels with optional console output in debug mode
 - Custom sanitization patterns via configuration
 
-### Security
-
-- OWASP A09: All operations logged with session context and timestamps
-- OWASP A02: No credentials in logs (sanitization enforced)
-- OWASP A08: Immutable audit trail for compliance
-- OWASP LLM02: Command outputs sanitized before logging
-
 ## [0.1.6] - 2025-10-05
 
 ### Added
