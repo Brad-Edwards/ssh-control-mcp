@@ -34,12 +34,57 @@ export class SSHConnectionManager {
     this.sessions = new Map();
     this.config = config;
 
-    // Initialize audit logger if enabled in config
     if (config?.logging?.audit?.enabled !== false) {
       this.auditLogger = new AuditLogger(
         config?.logging,
         config?.logging?.audit?.filePath
       );
+    }
+  }
+
+  /**
+   * Check if a command is allowed by security policy
+   * @param command - The command to check
+   * @returns true if allowed, false otherwise
+   * @throws {SSHError} If command is blocked or not allowed
+   */
+  private checkCommandAllowed(command: string): void {
+    if (!this.config?.security) {
+      return; // No security config, allow all
+    }
+
+    const { allowedCommands, blockedCommands } = this.config.security;
+
+    // If allowedCommands is defined and not empty, check whitelist first
+    if (allowedCommands && allowedCommands.length > 0) {
+      const allowed = allowedCommands.some(pattern => {
+        try {
+          return new RegExp(pattern).test(command);
+        } catch {
+          return false;
+        }
+      });
+
+      if (!allowed) {
+        throw new SSHError('Command not allowed by security policy');
+      }
+      // If whitelisted, allow even if also blocklisted (whitelist takes precedence)
+      return;
+    }
+
+    // Check blocklist if no whitelist or command not whitelisted
+    if (blockedCommands && blockedCommands.length > 0) {
+      const blocked = blockedCommands.some(pattern => {
+        try {
+          return new RegExp(pattern).test(command);
+        } catch {
+          return false;
+        }
+      });
+
+      if (blocked) {
+        throw new SSHError('Command blocked by security policy');
+      }
     }
   }
 
@@ -75,6 +120,8 @@ export class SSHConnectionManager {
     if (timeout <= 0) {
       throw new SSHError(`${INVALID_ARGUMENTS_ERROR}: timeout must be positive`);
     }
+
+    this.checkCommandAllowed(command);
 
     const startTime = Date.now();
     let client;
@@ -210,6 +257,11 @@ export class SSHConnectionManager {
       throw new SSHError(`${SESSION_ALREADY_EXISTS_ERROR}: ${sessionId}`);
     }
 
+    const maxSessions = this.config?.security?.maxSessions ?? 10;
+    if (this.sessions.size >= maxSessions) {
+      throw new SSHError(`Maximum session limit (${maxSessions}) reached`);
+    }
+
     const client = await this.pool.getConnection(target, username, privateKeyPath, port);
 
     const session = new PersistentSession(
@@ -224,13 +276,15 @@ export class SSHConnectionManager {
       shellType
     );
 
-    // Set audit logger for session
     session.setAuditLogger(this.auditLogger);
+
+    if (this.config?.security) {
+      session.setCommandFilter((cmd: string) => this.checkCommandAllowed(cmd));
+    }
 
     await session.initialize();
     this.sessions.set(sessionId, session);
 
-    // Log session creation
     this.auditLogger?.logEvent(AuditEvent.SESSION_CREATED, {
       sessionId,
       target: `${target}:${port}`,
