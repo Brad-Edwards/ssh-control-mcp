@@ -78,7 +78,6 @@ function zodToJsonSchema(schema: z.ZodObject<any>): { type: 'object'; properties
     let zodType = value as z.ZodTypeAny;
     let isRequired = true;
 
-    // Extract description from Zod schema
     const description = (zodType as any)._def?.description || '';
 
     // Unwrap optional and default wrappers to get the inner type
@@ -88,7 +87,6 @@ function zodToJsonSchema(schema: z.ZodObject<any>): { type: 'object'; properties
       zodType = (zodType as any)._def.innerType;
     }
 
-    // Determine JSON Schema type based on the inner type
     if (zodType instanceof z.ZodString) {
       properties[key] = { type: 'string', description };
     } else if (zodType instanceof z.ZodNumber) {
@@ -103,7 +101,6 @@ function zodToJsonSchema(schema: z.ZodObject<any>): { type: 'object'; properties
       };
     }
 
-    // Add to required array if not optional
     if (isRequired) {
       required.push(key);
     }

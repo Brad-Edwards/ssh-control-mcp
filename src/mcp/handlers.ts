@@ -27,7 +27,6 @@ import {
  * @param manager - The SSH connection manager instance
  */
 export function registerToolHandlers(server: Server, manager: SSHConnectionManager): void {
-  // Register tools/list handler
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
       tools: tools.map(tool => ({
@@ -38,7 +37,6 @@ export function registerToolHandlers(server: Server, manager: SSHConnectionManag
     };
   });
 
-  // Register tools/call handler
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 

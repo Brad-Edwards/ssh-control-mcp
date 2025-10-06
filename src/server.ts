@@ -12,10 +12,8 @@ import { createServer, startServer } from './mcp/server.js';
 
 async function main() {
   try {
-    // Load configuration from ./config/default.json
     const config = await loadConfig();
 
-    // Create and start MCP server
     const server = createServer(config);
     await startServer(server, { registerSignalHandlers: true });
 
