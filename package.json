@@ -1,9 +1,10 @@
 {
     "name": "ssh-control-mcp",
-    "version": "0.1.2",
-    "description": "",
+    "version": "0.1.9",
+    "description": "MCP server for persistent SSH session management with interactive commands and background processes",
     "type": "module",
     "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "bin": {
         "ssh-control-mcp": "dist/cli.js"
     },
@@ -16,9 +17,29 @@
         "docs": "typedoc",
         "prepublishOnly": "npm run typecheck && npm run test"
     },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
+    "keywords": [
+        "mcp",
+        "ssh",
+        "model-context-protocol",
+        "session-management",
+        "persistent-ssh",
+        "ai-agents",
+        "llm",
+        "remote-execution"
+    ],
+    "author": "Brad Edwards",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Brad-Edwards/ssh-control-mcp.git"
+    },
+    "homepage": "https://github.com/Brad-Edwards/ssh-control-mcp#readme",
+    "bugs": {
+        "url": "https://github.com/Brad-Edwards/ssh-control-mcp/issues"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
     "devDependencies": {
         "@types/node": "^24.6.2",
         "@types/ssh2": "^1.15.5",
