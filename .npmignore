@@ -1,0 +1,41 @@
+# Source files
+src/
+tests/
+
+# Test coverage
+coverage/
+
+# Development notes
+notes/
+
+# Generated documentation
+docs/
+
+# Runtime logs
+logs/
+*.log
+
+# User configuration
+config/default.json
+
+# Development configs
+tsconfig.json
+vitest.config.ts
+typedoc.json
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.swp
+*.swo
+*~
